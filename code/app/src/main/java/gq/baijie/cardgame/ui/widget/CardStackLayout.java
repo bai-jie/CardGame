@@ -34,7 +34,7 @@ public class CardStackLayout extends ViewGroup {
 
     delta = a.getDimensionPixelSize(R.styleable.CardStackLayout_cslDelta, -1);
     if (delta == -1) {
-      getContext().getResources().getDimensionPixelSize(R.dimen.default_card_stack_layout_delta);
+      delta = getResources().getDimensionPixelSize(R.dimen.default_card_stack_layout_delta);
     }
 
     a.recycle();
