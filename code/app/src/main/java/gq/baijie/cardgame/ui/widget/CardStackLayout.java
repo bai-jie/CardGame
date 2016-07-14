@@ -64,17 +64,27 @@ public class CardStackLayout extends ViewGroup {
   @Override
   protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
     final int count = getChildCount();
-    final int height =
-        count > 0 ? delta * (count - 1) + getChildAt(count - 1).getMeasuredHeight() : 0;
+    /** ∑delta + height of the last child */
+    int height = 0;
+//        count > 0 ? delta * (count - 1) + getChildAt(count - 1).getMeasuredHeight() : 0;
+    /** max width of children */
     int maxWidth = 0;
     int childState = 0;
     for (int i = 0; i < count; i++) {
       final View child = getChildAt(i);
       if (child.getVisibility() != GONE) {
         measureChild(child, widthMeasureSpec, heightMeasureSpec);
+        // height
+        final int childDelta = ((LayoutParams) child.getLayoutParams()).delta;
+        height += childDelta < 0 ? delta : childDelta;// see LayoutParams.delta
+        // maxWidth
         maxWidth = Math.max(maxWidth, child.getMeasuredWidth());
+        // childState
         childState = combineMeasuredStates(childState, child.getMeasuredState());
       }
+    }
+    if (count > 0) {
+      height += getChildAt(count - 1).getMeasuredHeight();
     }
     setMeasuredDimension(
         resolveSizeAndState(maxWidth, widthMeasureSpec, childState),
@@ -102,8 +112,57 @@ public class CardStackLayout extends ViewGroup {
           Math.min(leftPos + child.getMeasuredWidth(), maxRightPos),
           Math.min(topPos + child.getMeasuredHeight(), maxBottomPos)
       );
-      topPos += delta;
+      final int childDelta = ((LayoutParams) child.getLayoutParams()).delta;
+      topPos += childDelta < 0 ? delta : childDelta;// see LayoutParams.delta;
     }
+  }
+
+  @Override
+  public LayoutParams generateLayoutParams(AttributeSet attrs) {
+    return new LayoutParams(getContext(), attrs);
+  }
+
+  @Override
+  protected LayoutParams generateDefaultLayoutParams() {
+    return new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+  }
+
+  @Override
+  protected ViewGroup.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+    return new LayoutParams(p);
+  }
+
+  @Override
+  protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
+    return p instanceof LayoutParams;
+  }
+
+  public static class LayoutParams extends ViewGroup.LayoutParams {
+
+    public static final int NOT_SET = -1;
+
+    /**
+     * a pixel value which is greater than or equal to 0 or {@link #NOT_SET}
+     */
+    public int delta = NOT_SET;
+
+    public LayoutParams(Context c, AttributeSet attrs) {
+      super(c, attrs);
+    }
+
+    public LayoutParams(int width, int height) {
+      super(width, height);
+    }
+
+    public LayoutParams(int width, int height, int delta) {
+      super(width, height);
+      this.delta = delta;
+    }
+
+    public LayoutParams(ViewGroup.LayoutParams source) {
+      super(source);
+    }
+
   }
 
 }

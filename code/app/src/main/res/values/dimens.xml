@@ -4,4 +4,5 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
 
     <dimen name="default_card_stack_layout_delta">16dp</dimen>
+    <dimen name="focused_card_delta">32dp</dimen>
 </resources>

@@ -19,13 +19,17 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
+    final int focused_card_delta = getResources().getDimensionPixelSize(R.dimen.focused_card_delta);
+
     LinearLayout cardStackList = (LinearLayout) findViewById(R.id.card_stack_list);
     assert cardStackList != null;
     LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 1);
 
     CardStackLayout cardStack = new CardStackLayout(cardStackList.getContext());
     cardStack.addView(newCard(cardStack.getContext()), MATCH_PARENT, WRAP_CONTENT);
-    cardStack.addView(newCard(cardStack.getContext()), MATCH_PARENT, WRAP_CONTENT);
+    cardStack.addView(
+        newCard(cardStack.getContext()),
+        new CardStackLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, focused_card_delta));
     cardStack.addView(newCard(cardStack.getContext()), MATCH_PARENT, WRAP_CONTENT);
     cardStack.addView(newCard(cardStack.getContext()), MATCH_PARENT, WRAP_CONTENT);
     cardStackList.addView(cardStack, layoutParams);
