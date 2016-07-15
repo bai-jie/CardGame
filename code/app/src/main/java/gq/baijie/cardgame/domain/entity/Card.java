@@ -19,9 +19,13 @@ public class Card {
   }
 
   public enum Suit {
+    /** ♠ */
     SPADE,
+    /** ♣ */
     CLUB,
+    /** ♥ */
     HEART,
+    /** ♦ */
     DIAMOND
   }
 
@@ -36,9 +40,9 @@ public class Card {
     EIGHT(8),
     NINE(9),
     TEN(10),
-    KING(13),
+    JACK(11),
     QUEEN(12),
-    JACK(11);
+    KING(13);
 
     private final int id;
 
