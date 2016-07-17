@@ -6,6 +6,7 @@ import android.support.percent.PercentFrameLayout;
 import android.support.percent.PercentLayoutHelper;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -13,6 +14,9 @@ import gq.baijie.cardgame.business.SpiderSolitaire;
 import gq.baijie.cardgame.business.SpiderSolitaires;
 import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.ui.widget.CardStackLayout;
+import rx.functions.Action1;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
 
 import static android.view.Gravity.CENTER_HORIZONTAL;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
@@ -30,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     cardStackList = (LinearLayout) findViewById(R.id.card_stack_list);
 
     show(SpiderSolitaires.getSampleSpiderSolitaireState());
+    setSelectListener();
   }
 
   private void show(SpiderSolitaire.State state) {
@@ -106,5 +111,50 @@ public class MainActivity extends AppCompatActivity {
     }
     return result;
   }
+
+
+  // ########## Event Bus ##########
+  private final Subject<Object, Object> eventBus = PublishSubject.create();
+
+  private void setSelectListener() {
+    if (cardStackList == null) {
+      return; //TODO
+    }
+    for (int cardStackIndex = 0; cardStackIndex < cardStackList.getChildCount(); cardStackIndex++) {
+      final ViewGroup cardStackView = (ViewGroup) cardStackList.getChildAt(cardStackIndex);
+      for (int cardIndex = 0; cardIndex < cardStackView.getChildCount(); cardIndex++) {
+        final int finalCardStackIndex = cardStackIndex;
+        final int finalCardIndex = cardIndex;
+        cardStackView.getChildAt(cardIndex).setOnClickListener(new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            eventBus.onNext(new SelectCardEvent(finalCardStackIndex, finalCardIndex));
+          }
+        });
+      }
+    }
+  }
+
+  {
+    eventBus.ofType(SelectCardEvent.class).subscribe(new Action1<SelectCardEvent>() {
+      @Override
+      public void call(SelectCardEvent event) {
+        System.out.printf("cardStackIndex: %d, selectedCardIndex: %d%n",
+                          event.cardStackIndex, event.selectedCardIndex);
+      }
+    });
+  }
+
+  public static class SelectCardEvent {
+    final int cardStackIndex;
+    final int selectedCardIndex;
+
+    public SelectCardEvent(int cardStackIndex, int selectedCardIndex) {
+      this.cardStackIndex = cardStackIndex;
+      this.selectedCardIndex = selectedCardIndex;
+    }
+  }
+
+  // ########## Event Bus End ##########
 
 }
