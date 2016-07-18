@@ -136,11 +136,34 @@ public class MainActivity extends AppCompatActivity {
   }
 
   {
+    // change card view's delta layout params when click it
     eventBus.ofType(SelectCardEvent.class).subscribe(new Action1<SelectCardEvent>() {
+      int oldSelectedCardStackIndex = -1;
+      int oldSelectedCardIndex = -1;
+
       @Override
       public void call(SelectCardEvent event) {
-        System.out.printf("cardStackIndex: %d, selectedCardIndex: %d%n",
-                          event.cardStackIndex, event.selectedCardIndex);
+        try {
+          // restore last changed card view's layout params
+          if (oldSelectedCardStackIndex != -1 && oldSelectedCardIndex != -1) {
+            final ViewGroup oldCardStackView =
+                (ViewGroup) cardStackList.getChildAt(oldSelectedCardStackIndex);
+            final View oldCardView = oldCardStackView.getChildAt(oldSelectedCardIndex);
+            ((CardStackLayout.LayoutParams) oldCardView.getLayoutParams()).delta =
+                CardStackLayout.LayoutParams.NOT_SET;
+          }
+          // update selected card view's layout params
+          final ViewGroup cardStack = (ViewGroup) cardStackList.getChildAt(event.cardStackIndex);
+          final View cardView = cardStack.getChildAt(event.selectedCardIndex);
+          ((CardStackLayout.LayoutParams) cardView.getLayoutParams()).delta =
+              cardView.getResources().getDimensionPixelSize(R.dimen.focused_card_delta);
+          oldSelectedCardStackIndex = event.cardStackIndex;
+          oldSelectedCardIndex = event.selectedCardIndex;
+          // update View
+          cardView.requestLayout();
+        } catch (Exception e) {
+          e.printStackTrace();//TODO
+        }
       }
     });
   }
