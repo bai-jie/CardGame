@@ -14,9 +14,6 @@ import gq.baijie.cardgame.business.SpiderSolitaire;
 import gq.baijie.cardgame.business.SpiderSolitaires;
 import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.ui.widget.CardStackLayout;
-import rx.functions.Action1;
-import rx.subjects.PublishSubject;
-import rx.subjects.Subject;
 
 import static android.view.Gravity.CENTER_HORIZONTAL;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
@@ -114,67 +111,34 @@ public class MainActivity extends AppCompatActivity {
 
 
   // ########## Event Bus ##########
-  private final Subject<Object, Object> eventBus = PublishSubject.create();
 
   private void setSelectListener() {
     if (cardStackList == null) {
       return; //TODO
     }
+    final View.OnFocusChangeListener focusChangeListener = new View.OnFocusChangeListener() {
+      @Override
+      public void onFocusChange(View v, boolean hasFocus) {
+        ((CardStackLayout.LayoutParams) v.getLayoutParams()).delta =
+            hasFocus ? v.getResources().getDimensionPixelSize(R.dimen.focused_card_delta)
+                     : CardStackLayout.LayoutParams.NOT_SET;
+        v.requestLayout();
+      }
+    };
+    final View.OnClickListener clickListener = new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        v.requestFocusFromTouch();
+      }
+    };
     for (int cardStackIndex = 0; cardStackIndex < cardStackList.getChildCount(); cardStackIndex++) {
       final ViewGroup cardStackView = (ViewGroup) cardStackList.getChildAt(cardStackIndex);
       for (int cardIndex = 0; cardIndex < cardStackView.getChildCount(); cardIndex++) {
-        final int finalCardStackIndex = cardStackIndex;
-        final int finalCardIndex = cardIndex;
-        cardStackView.getChildAt(cardIndex).setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View v) {
-            eventBus.onNext(new SelectCardEvent(finalCardStackIndex, finalCardIndex));
-          }
-        });
+        final View cardView = cardStackView.getChildAt(cardIndex);
+        cardView.setFocusableInTouchMode(true);
+        cardView.setOnFocusChangeListener(focusChangeListener);
+        cardView.setOnClickListener(clickListener);
       }
-    }
-  }
-
-  {
-    // change card view's delta layout params when click it
-    eventBus.ofType(SelectCardEvent.class).subscribe(new Action1<SelectCardEvent>() {
-      int oldSelectedCardStackIndex = -1;
-      int oldSelectedCardIndex = -1;
-
-      @Override
-      public void call(SelectCardEvent event) {
-        try {
-          // restore last changed card view's layout params
-          if (oldSelectedCardStackIndex != -1 && oldSelectedCardIndex != -1) {
-            final ViewGroup oldCardStackView =
-                (ViewGroup) cardStackList.getChildAt(oldSelectedCardStackIndex);
-            final View oldCardView = oldCardStackView.getChildAt(oldSelectedCardIndex);
-            ((CardStackLayout.LayoutParams) oldCardView.getLayoutParams()).delta =
-                CardStackLayout.LayoutParams.NOT_SET;
-          }
-          // update selected card view's layout params
-          final ViewGroup cardStack = (ViewGroup) cardStackList.getChildAt(event.cardStackIndex);
-          final View cardView = cardStack.getChildAt(event.selectedCardIndex);
-          ((CardStackLayout.LayoutParams) cardView.getLayoutParams()).delta =
-              cardView.getResources().getDimensionPixelSize(R.dimen.focused_card_delta);
-          oldSelectedCardStackIndex = event.cardStackIndex;
-          oldSelectedCardIndex = event.selectedCardIndex;
-          // update View
-          cardView.requestLayout();
-        } catch (Exception e) {
-          e.printStackTrace();//TODO
-        }
-      }
-    });
-  }
-
-  public static class SelectCardEvent {
-    final int cardStackIndex;
-    final int selectedCardIndex;
-
-    public SelectCardEvent(int cardStackIndex, int selectedCardIndex) {
-      this.cardStackIndex = cardStackIndex;
-      this.selectedCardIndex = selectedCardIndex;
     }
   }
 
