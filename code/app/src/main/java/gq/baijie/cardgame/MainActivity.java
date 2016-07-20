@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
       return; //TODO
     }
     cardStackList.removeAllViews();//TODO do this?
-    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 1);
+    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
 
     for (SpiderSolitaire.State.CardStack cardStack : state.cardStacks) {
       cardStackList.addView(newCardStackView(cardStackList.getContext(), cardStack), layoutParams);
