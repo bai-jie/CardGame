@@ -64,9 +64,8 @@ public class CardStackLayout extends ViewGroup {
   @Override
   protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
     final int count = getChildCount();
-    /** ∑delta + height of the last child */
+    /** ∑delta of child (0, childCount-1) + height of the last child */
     int height = 0;
-//        count > 0 ? delta * (count - 1) + getChildAt(count - 1).getMeasuredHeight() : 0;
     /** max width of children */
     int maxWidth = 0;
     int childState = 0;
@@ -75,8 +74,7 @@ public class CardStackLayout extends ViewGroup {
       if (child.getVisibility() != GONE) {
         measureChild(child, widthMeasureSpec, heightMeasureSpec);
         // height
-        final int childDelta = ((LayoutParams) child.getLayoutParams()).delta;
-        height += childDelta < 0 ? delta : childDelta;// see LayoutParams.delta
+        height += computeChildDelta(child);
         // maxWidth
         maxWidth = Math.max(maxWidth, child.getMeasuredWidth());
         // childState
@@ -84,7 +82,9 @@ public class CardStackLayout extends ViewGroup {
       }
     }
     if (count > 0) {
-      height += getChildAt(count - 1).getMeasuredHeight();
+      final View lastChild = getChildAt(count - 1);
+      height -= computeChildDelta(lastChild);
+      height += lastChild.getMeasuredHeight();
     }
     setMeasuredDimension(
         resolveSizeAndState(maxWidth, widthMeasureSpec, childState),
@@ -112,9 +112,13 @@ public class CardStackLayout extends ViewGroup {
           Math.min(leftPos + child.getMeasuredWidth(), maxRightPos),
           Math.min(topPos + child.getMeasuredHeight(), maxBottomPos)
       );
-      final int childDelta = ((LayoutParams) child.getLayoutParams()).delta;
-      topPos += childDelta < 0 ? delta : childDelta;// see LayoutParams.delta;
+      topPos += computeChildDelta(child);
     }
+  }
+
+  private int computeChildDelta(View child) {
+    final int childDelta = ((LayoutParams) child.getLayoutParams()).delta;
+    return childDelta < 0 ? delta : childDelta;// see LayoutParams.delta;
   }
 
   @Override
