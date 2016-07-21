@@ -20,6 +20,8 @@ androidProjects << ':client:android'
 
 project(javaProjects) {
     apply plugin: 'java'
+
+    sourceCompatibility = JavaVersion.VERSION_1_7
 }
 
 project(androidProjects) {
