@@ -1,1 +1,4 @@
-include ':app'
+rootProject.name = 'card-game'
+
+include ':business'
+include ':client:android'

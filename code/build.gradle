@@ -12,12 +12,38 @@ buildscript {
     }
 }
 
-allprojects {
+def javaProjects = []
+def androidProjects = []
+
+javaProjects << ':business'
+androidProjects << ':client:android'
+
+project(javaProjects) {
+    apply plugin: 'java'
+}
+
+project(androidProjects) {
+    apply plugin: 'com.android.application'
+}
+
+project(javaProjects + androidProjects) {
+    group = 'gq.baijie.cardgame'
+    version = '0.1.0'
+
     repositories {
         jcenter()
+    }
+
+    dependencies {
+        compile 'io.reactivex:rxjava:1.1.7'
+        testCompile 'junit:junit:4.12'
     }
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+Iterable project(Iterable<String> projects, Closure configureClosure) {
+    projects.collect {project(it, configureClosure)}
 }
