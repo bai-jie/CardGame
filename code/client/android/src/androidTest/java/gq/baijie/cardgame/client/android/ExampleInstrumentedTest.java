@@ -1,4 +1,4 @@
-package gq.baijie.cardgame;
+package gq.baijie.cardgame.client.android;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

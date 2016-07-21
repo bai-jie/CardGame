@@ -1,4 +1,4 @@
-package gq.baijie.cardgame;
+package gq.baijie.cardgame.client.android;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -14,8 +14,8 @@ import android.widget.TextView;
 
 import gq.baijie.cardgame.business.SpiderSolitaire;
 import gq.baijie.cardgame.business.SpiderSolitaires;
+import gq.baijie.cardgame.client.android.ui.widget.CardStackLayout;
 import gq.baijie.cardgame.domain.entity.Card;
-import gq.baijie.cardgame.ui.widget.CardStackLayout;
 
 import static android.view.Gravity.CENTER_HORIZONTAL;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
