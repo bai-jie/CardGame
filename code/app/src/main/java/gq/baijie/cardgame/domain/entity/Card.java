@@ -50,6 +50,10 @@ public class Card {
       this.id = id;
     }
 
+    public static Rank fromId(int id) {
+      return values()[id - 1];
+    }
+
     public int getId() {
       return id;
     }
