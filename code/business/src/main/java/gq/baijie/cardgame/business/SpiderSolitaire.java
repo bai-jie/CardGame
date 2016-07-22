@@ -56,6 +56,27 @@ public class SpiderSolitaire {
     state.move(from, to);
   }
 
+  public boolean canDraw() {
+    // * can draw naturally
+    if (!state.canDraw()) {
+      return false;
+    }
+    //* all cardStack nonempty //TODO real check this?
+    for (State.CardStack cardStack : state.cardStacks) {
+      if (cardStack.cards.isEmpty()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public void draw() {
+    if (!canDraw()) {
+      throw new IllegalStateException();
+    }
+    state.draw();
+  }
+
   public static class State {
 
     /** left to right, 0 to 9 */
@@ -121,6 +142,24 @@ public class SpiderSolitaire {
       eventbus.onNext(new MoveEvent(from, to));
     }
 
+    boolean canDraw() {
+      // * state.cardsForDrawing nonempty
+      return !cardsForDrawing.isEmpty();
+    }
+
+    void draw() {
+      if (!canDraw()) {
+        throw new IllegalArgumentException();
+      }
+      final Card[] cards = new Card[10];
+      for (int i = 0; i < cards.length; i++) {
+        final Card card = cardsForDrawing.remove(cardsForDrawing.size() - 1);
+        cards[i] = card;
+        cardStacks.get(i).cards.add(card);
+      }
+      eventbus.onNext(new DrawCardsEvent(cards));
+    }
+
     public static class CardStack {
 
       public List<Card> cards = new ArrayList<>();
@@ -129,12 +168,21 @@ public class SpiderSolitaire {
     }
 
     public static class MoveEvent {
-      final CardPosition oldPosition;
-      final CardPosition newPosition;
+      public final CardPosition oldPosition;
+      public final CardPosition newPosition;
 
       public MoveEvent(CardPosition oldPosition, CardPosition newPosition) {
         this.oldPosition = oldPosition;
         this.newPosition = newPosition;
+      }
+    }
+
+    public static class DrawCardsEvent {
+      /** index is same to index for {@link State#cardStacks} */
+      public final Card[] drawnCards;//TODO make it unmodifiable?
+
+      public DrawCardsEvent(Card[] drawnCards) {
+        this.drawnCards = drawnCards;
       }
     }
 
