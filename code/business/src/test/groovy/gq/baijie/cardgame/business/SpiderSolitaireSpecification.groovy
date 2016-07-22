@@ -24,19 +24,19 @@ class SpiderSolitaireSpecification extends Specification {
         game.state.getCard(CardPosition.of(1, 0)).rank.id == 1
         subscriber.assertNotCompleted()
         subscriber.assertValueCount(1)
-        subscriber.onNextEvents[0].with {
-            assert delegate instanceof SpiderSolitaire.State.MoveEvent
-            oldPosition.cardStackIndex == 0 &&
-                    oldPosition.cardIndex == 0 &&
-                    newPosition.cardStackIndex == 1 &&
-                    newPosition.cardIndex == 0
+        with(subscriber.onNextEvents[0]) {
+            delegate instanceof SpiderSolitaire.State.MoveEvent
+            oldPosition.cardStackIndex == 0
+            oldPosition.cardIndex == 0
+            newPosition.cardStackIndex == 1
+            newPosition.cardIndex == 0
         }
     }
 
     def "move multiple cards"() {
         given: "cards[1, 3, 2, 1], cards[4]"
         def game = newEmptyGame()
-        game.state.cardStacks[0].cards.with{
+        game.state.cardStacks[0].cards.with {
             add(newCard(1))
             add(newCard(3))
             add(newCard(2))
@@ -57,12 +57,12 @@ class SpiderSolitaireSpecification extends Specification {
         game.state.getCard(CardPosition.of(1, 3)).rank.id == 1
         subscriber.assertNotCompleted()
         subscriber.assertValueCount(1)
-        subscriber.onNextEvents[0].with {
-            assert delegate instanceof SpiderSolitaire.State.MoveEvent
-            oldPosition.cardStackIndex == 0 &&
-                    oldPosition.cardIndex == 1 &&
-                    newPosition.cardStackIndex == 1 &&
-                    newPosition.cardIndex == 1
+        with(subscriber.onNextEvents[0]) {
+            delegate instanceof SpiderSolitaire.State.MoveEvent
+            oldPosition.cardStackIndex == 0
+            oldPosition.cardIndex == 1
+            newPosition.cardStackIndex == 1
+            newPosition.cardIndex == 1
         }
 
         when: "move cards[4, 3, 2, 1] from (1, 0) to (2, 0)"
@@ -77,12 +77,12 @@ class SpiderSolitaireSpecification extends Specification {
         game.state.getCard(CardPosition.of(2, 3)).rank.id == 1
         subscriber.assertNotCompleted()
         subscriber.assertValueCount(2)
-        subscriber.onNextEvents[1].with {
-            assert delegate instanceof SpiderSolitaire.State.MoveEvent
-            oldPosition.cardStackIndex == 1 &&
-                    oldPosition.cardIndex == 0 &&
-                    newPosition.cardStackIndex == 2 &&
-                    newPosition.cardIndex == 0
+        with(subscriber.onNextEvents[1]) {
+            delegate instanceof SpiderSolitaire.State.MoveEvent
+            oldPosition.cardStackIndex == 1
+            oldPosition.cardIndex == 0
+            newPosition.cardStackIndex == 2
+            newPosition.cardIndex == 0
         }
     }
 
