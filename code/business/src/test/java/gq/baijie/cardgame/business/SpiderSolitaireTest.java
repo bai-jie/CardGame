@@ -8,7 +8,7 @@ import java.util.List;
 import gq.baijie.cardgame.domain.entity.Card;
 
 import static gq.baijie.cardgame.business.SpiderSolitaire.CardPosition;
-import static gq.baijie.cardgame.business.SpiderSolitaireTest.Generators.newEmptyGame;
+import static gq.baijie.cardgame.business.SpiderSolitaireTestUtils.newEmptyGame;
 import static org.junit.Assert.assertEquals;
 
 
@@ -16,11 +16,11 @@ public class SpiderSolitaireTest {
 
   @Test
   public void testMoveToEmptyCardStack() {
-    // when
+    // given
     SpiderSolitaire game = newEmptyGame();
     game.getState().cardStacks.get(0).cards.addAll(
         CardsBuilder.create().add(3).add(2).add(1).build());
-    // if
+    // when
     game.move(CardPosition.of(0, 0), CardPosition.of(1, 0));
     // then
     assertEquals(0, game.getState().cardStacks.get(0).cards.size());
@@ -32,12 +32,12 @@ public class SpiderSolitaireTest {
 
   @Test
   public void testMoveToNonemptyCardStack() {
-    // when
+    // given
     SpiderSolitaire game = newEmptyGame();
     game.getState().cardStacks.get(0).cards.addAll(
         CardsBuilder.create().add(3).add(2).add(1).build());
     game.getState().cardStacks.get(1).cards.add(new Card(Card.Suit.HEART, Card.Rank.FOUR));
-    // if
+    // when
     game.move(CardPosition.of(0, 0), CardPosition.of(1, 1));
     // then
     assertEquals(0, game.getState().cardStacks.get(0).cards.size());
@@ -50,34 +50,25 @@ public class SpiderSolitaireTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testCannotMoveNonsequentialCardStack() {
-    // when
+    // given
     SpiderSolitaire game = newEmptyGame();
     game.getState().cardStacks.get(0).cards.addAll(
         CardsBuilder.create().add(3).add(2).add(3).build());
-    // if
+    // when
     game.move(CardPosition.of(0, 0), CardPosition.of(1, 0));
     // should throw Exception
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testCannotBeNonsequentialAfterMoved() {
-    // when
+    // given
     SpiderSolitaire game = newEmptyGame();
     game.getState().cardStacks.get(0).cards.addAll(
         CardsBuilder.create().add(3).add(2).add(1).build());
     game.getState().cardStacks.get(1).cards.add(new Card(Card.Suit.HEART, Card.Rank.FIVE));
-    // if
+    // when
     game.move(CardPosition.of(0, 0), CardPosition.of(1, 1));
     // should throw Exception
-  }
-
-
-  static class Generators {
-
-    static SpiderSolitaire newEmptyGame() {
-      SpiderSolitaire.State state = new SpiderSolitaire.State();
-      return new SpiderSolitaire(state);
-    }
   }
 
   static class CardsBuilder {
