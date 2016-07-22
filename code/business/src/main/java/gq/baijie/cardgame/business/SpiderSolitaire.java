@@ -2,10 +2,12 @@ package gq.baijie.cardgame.business;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import gq.baijie.cardgame.domain.entity.Card;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -15,6 +17,65 @@ public class SpiderSolitaire {
 
   public SpiderSolitaire(State state) {
     this.state = state;
+    init();
+  }
+
+  private void init() {
+    // * checkIsSortedOut when MoveEvent
+    state.getEventBus().ofType(State.MoveEvent.class).subscribe(new Action1<State.MoveEvent>() {
+      @Override
+      public void call(State.MoveEvent moveEvent) {
+        checkIsSortedOut(moveEvent.newPosition.cardStackIndex);
+      }
+    });
+    // * checkIsSortedOut when DrawCardsEvent
+    state.getEventBus().ofType(State.DrawCardsEvent.class).subscribe(
+        new Action1<State.DrawCardsEvent>() {
+          @Override
+          public void call(State.DrawCardsEvent drawCardsEvent) {
+            for (int i = 0; i < state.cardStacks.size(); i++) {
+              checkIsSortedOut(i);
+            }
+          }
+        });
+  }
+
+  private boolean checkIsSortedOut(final int cardStackIndex) {
+    if (!state.isLegalCardStackIndex(cardStackIndex)) {
+      throw new IllegalArgumentException();
+    }
+    final State.CardStack cardStack = state.cardStacks.get(cardStackIndex);
+
+    if (cardStack.cards.isEmpty()) {
+      return false;
+    }
+
+    Card biggestCard = cardStack.cards.get(cardStack.cards.size() - 1);
+    for (int i = cardStack.cards.size() - 2; i >= 0 && i >= cardStack.openIndex; i--) {
+      Card currentCard = cardStack.cards.get(i);
+      // * is sequential
+      if (currentCard.getRank().getId() == biggestCard.getRank().getId() + 1) {
+        biggestCard = currentCard;
+      }
+    }
+    if (biggestCard.getRank() != Card.Rank.KING) {
+      return false;
+    }
+    // do move out cards sorted out
+    // 1. move last 13 cards to sortedCards
+    final List<Card> moved = new ArrayList<>(13);
+    final int position = cardStack.cards.size() - 13;
+    while (cardStack.cards.size() > position) {
+      moved.add(cardStack.cards.remove(position));
+    }
+    state.sortedCards.add(moved);
+    state.eventbus.onNext(new State.MoveOutEvent(cardStackIndex, position));
+    // 2. update openIndex
+    assert cardStack.openIndex <= position;
+    if (cardStack.openIndex == position && cardStack.openIndex != 0) {
+      cardStack.openIndex--;
+    }// else (cardStack.openIndex < position || cardStack.openIndex == 0) do nothing
+    return true;
   }
 
   public State getState() {
@@ -49,7 +110,7 @@ public class SpiderSolitaire {
     return true;
   }
 
-  public void move(CardPosition from, CardPosition to) {
+  public void move(CardPosition from, CardPosition to) {//TODO update openIndex
     if (!canMove(from, to)) {
       throw new IllegalArgumentException();
     }
@@ -84,6 +145,9 @@ public class SpiderSolitaire {
 
     /** cards for drawing, initially in five piles of ten with no cards showing */
     public final List<Card> cardsForDrawing = new ArrayList<>(50);
+
+    /** cards have been sorted out */
+    public final List<List<Card>> sortedCards = new LinkedList<>();
 
     private final Subject<Object, Object> eventbus = PublishSubject.create();
 
@@ -163,7 +227,10 @@ public class SpiderSolitaire {
     public static class CardStack {
 
       public List<Card> cards = new ArrayList<>();
-      /** hide: [0, openIndex), open: [openIndex, cards.size()) */
+      /**
+       * hide: [0, openIndex), open: [openIndex, cards.size())<br>
+       * == 0 if cards.isEmpty()
+       */
       int openIndex;
     }
 
@@ -183,6 +250,16 @@ public class SpiderSolitaire {
 
       public DrawCardsEvent(Card[] drawnCards) {
         this.drawnCards = drawnCards;
+      }
+    }
+
+    public static class MoveOutEvent {
+      public final int cardStackIndex;
+      public final int cardIndex;
+
+      public MoveOutEvent(int cardStackIndex, int cardIndex) {
+        this.cardStackIndex = cardStackIndex;
+        this.cardIndex = cardIndex;
       }
     }
 

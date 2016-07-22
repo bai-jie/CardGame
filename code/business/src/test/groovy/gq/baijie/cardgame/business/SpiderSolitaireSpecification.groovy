@@ -94,7 +94,7 @@ class SpiderSolitaireSpecification extends Specification {
         // event logger
         def subscriber = TestSubscriber.create()
         game.state.eventBus.subscribe(subscriber)
-        // check
+        // checker
         // stack: [(1,10),(2,9),(3,8),(4,7),(5,6),(6,5),(7,4),(8,3),(9,2),(10,1)], cardsForDrawing: []
         def checker = {
             assert game.state.cardsForDrawing.isEmpty()
@@ -149,6 +149,73 @@ class SpiderSolitaireSpecification extends Specification {
         }
         subscriber.assertNotCompleted()
         subscriber.assertValueCount(0)
+    }
+
+    def "sort out cards when drawing"() {
+        given: "stack: [(1),(2),(3),(4),(5),(6),(7),(8),(9),(13..2)], cardsForDrawing: [1,2,3,4,5,6,7,8,9,10], sortedCards: []"
+        def game = newEmptyGame()
+        // set stack
+        (1..9).each { game.state.cardStacks[it - 1].cards.add(newCard(it)) }
+        game.state.cardStacks[9].cards.addAll((13..2).collect { newCard it })
+        // set cardsForDrawing
+        game.state.cardsForDrawing.addAll((1..10).collect { newCard it })
+        // event logger
+        def subscriber = TestSubscriber.create()
+        game.state.eventBus.subscribe(subscriber)
+
+        when:
+        game.draw()
+
+        then:
+        // -state stack: [(1,10),(2,9),(3,8),(4,7),(5,6),(6,5),(7,4),(8,3),(9,2),()], cardsForDrawing: [], sortedCards: [(13..1)]
+        //card stack
+        game.state.cardStacks[9].cards.isEmpty()
+        (0..8).each { assert game.state.cardStacks[it].cards.size() == 2 }
+        (0..8).each { assert game.state.getCard(CardPosition.of(it, 0)).rank.id == it + 1 }
+        (0..8).each { assert game.state.getCard(CardPosition.of(it, 1)).rank.id == 10 - it }
+        //cardsForDrawing
+        game.state.cardsForDrawing.isEmpty()
+        //sortedCards
+        game.state.sortedCards.size() == 1
+        game.state.sortedCards[0].collect { it.rank.id }.containsAll((13..1))
+        // -event [DrawEvent, MoveOutEvent]
+        subscriber.assertNotCompleted()
+        subscriber.assertValueCount(2)
+        subscriber.onNextEvents[0] instanceof SpiderSolitaire.State.DrawCardsEvent
+        with(subscriber.onNextEvents[1]) {
+            delegate instanceof SpiderSolitaire.State.MoveOutEvent
+            cardStackIndex == 9
+            cardIndex == 0
+        }
+    }
+
+    def "sort out cards when moving"() {
+        given: "stack: [(),(),(),(),(6..1),(),(),(13..7),(),()], cardsForDrawing: [], sortedCards: []"
+        final def game = newEmptyGame()
+        game.state.cardStacks[4].cards.addAll((6..1).collect { newCard it })
+        game.state.cardStacks[7].cards.addAll((13..7).collect { newCard it })
+        // event logger
+        def subscriber = TestSubscriber.create()
+        game.state.eventBus.subscribe(subscriber)
+
+        when: "move (4,0) to (7,7)"
+        game.move(CardPosition.of(4, 0), CardPosition.of(7, 7))
+
+        then:
+        // -state stack: [(),(),(),(),(),(),(),(),(),()], cardsForDrawing: [], sortedCards: [(13..1)]
+        game.state.cardStacks.each { it.cards.isEmpty() }
+        game.state.cardsForDrawing.isEmpty()
+        game.state.sortedCards.size() == 1
+        game.state.sortedCards[0].collect { it.rank.id }.containsAll((13..1))
+        // -event [DrawEvent, MoveOutEvent]
+        subscriber.assertNotCompleted()
+        subscriber.assertValueCount(2)
+        subscriber.onNextEvents[0] instanceof SpiderSolitaire.State.MoveEvent
+        with(subscriber.onNextEvents[1]) {
+            delegate instanceof SpiderSolitaire.State.MoveOutEvent
+            cardStackIndex == 7
+            cardIndex == 0
+        }
     }
 
 }
