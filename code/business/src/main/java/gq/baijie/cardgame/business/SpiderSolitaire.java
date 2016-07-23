@@ -7,7 +7,10 @@ import java.util.List;
 
 import gq.baijie.cardgame.domain.entity.Card;
 import rx.Observable;
+import rx.Scheduler;
+import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -20,6 +23,7 @@ public class SpiderSolitaire {
     init();
   }
 
+  //TODO MoveEvent, DrawCardsEvent maybe volatile
   private void init() {
     // * checkIsSortedOut when MoveEvent
     state.getEventBus().ofType(State.MoveEvent.class).subscribe(new Action1<State.MoveEvent>() {
@@ -69,7 +73,7 @@ public class SpiderSolitaire {
       moved.add(cardStack.cards.remove(position));
     }
     state.sortedCards.add(moved);
-    state.eventbus.onNext(new State.MoveOutEvent(cardStackIndex, position));
+    state.nextEvent(new State.MoveOutEvent(cardStackIndex, position));
     // 2. update openIndex
     assert cardStack.openIndex <= position;
     if (cardStack.openIndex == position && cardStack.openIndex != 0) {
@@ -150,6 +154,7 @@ public class SpiderSolitaire {
     public final List<List<Card>> sortedCards = new LinkedList<>();
 
     private final Subject<Object, Object> eventbus = PublishSubject.create();
+    private final Scheduler.Worker eventBusWorker = Schedulers.trampoline().createWorker();//TODO think more
 
     public State() {
       List<CardStack> cardStacks = new ArrayList<>(10);
@@ -161,6 +166,14 @@ public class SpiderSolitaire {
 
     public Observable<Object> getEventBus() {
       return eventbus.asObservable();
+    }
+    void nextEvent(final Object event) {
+      eventBusWorker.schedule(new Action0() {
+        @Override
+        public void call() {
+          eventbus.onNext(event);
+        }
+      });
     }
 
     public boolean isLegalCardStackIndex(int cardStackIndex) {
@@ -203,7 +216,7 @@ public class SpiderSolitaire {
       while (src.size() > from.cardIndex) {
         dest.add(src.remove(from.cardIndex));
       }
-      eventbus.onNext(new MoveEvent(from, to));
+      nextEvent(new MoveEvent(from, to));
     }
 
     boolean canDraw() {
@@ -221,7 +234,7 @@ public class SpiderSolitaire {
         cards[i] = card;
         cardStacks.get(i).cards.add(card);
       }
-      eventbus.onNext(new DrawCardsEvent(cards));
+      nextEvent(new DrawCardsEvent(cards));
     }
 
     public static class CardStack {
