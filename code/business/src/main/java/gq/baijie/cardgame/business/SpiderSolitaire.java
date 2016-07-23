@@ -23,16 +23,17 @@ public class SpiderSolitaire {
     init();
   }
 
-  //TODO MoveEvent, DrawCardsEvent maybe volatile
+  //TODO MoveEvent, DrawCardsEvent, MoveOutEvent maybe volatile
   private void init() {
-    // * checkIsSortedOut when MoveEvent
+    // * checkIsSortedOut when add cards to cardStack
+    // ** checkIsSortedOut when MoveEvent
     state.getEventBus().ofType(State.MoveEvent.class).subscribe(new Action1<State.MoveEvent>() {
       @Override
       public void call(State.MoveEvent moveEvent) {
         checkIsSortedOut(moveEvent.newPosition.cardStackIndex);
       }
     });
-    // * checkIsSortedOut when DrawCardsEvent
+    // ** checkIsSortedOut when DrawCardsEvent
     state.getEventBus().ofType(State.DrawCardsEvent.class).subscribe(
         new Action1<State.DrawCardsEvent>() {
           @Override
@@ -40,6 +41,22 @@ public class SpiderSolitaire {
             for (int i = 0; i < state.cardStacks.size(); i++) {
               checkIsSortedOut(i);
             }
+          }
+        });
+    // * updateIndex when remove cards from cardStack
+    // ** updateIndex when MoveEvent
+    state.getEventBus().ofType(State.MoveEvent.class).subscribe(new Action1<State.MoveEvent>() {
+      @Override
+      public void call(State.MoveEvent moveEvent) {
+        updateIndexIfNeed(moveEvent.oldPosition.cardStackIndex);
+      }
+    });
+    // ** updateIndex when MoveOutEvent
+    state.getEventBus().ofType(State.MoveOutEvent.class).subscribe(
+        new Action1<State.MoveOutEvent>() {
+          @Override
+          public void call(State.MoveOutEvent moveOutEvent) {
+            updateIndexIfNeed(moveOutEvent.cardStackIndex);
           }
         });
   }
@@ -66,7 +83,6 @@ public class SpiderSolitaire {
       return false;
     }
     // do move out cards sorted out
-    // 1. move last 13 cards to sortedCards
     final List<Card> moved = new ArrayList<>(13);
     final int position = cardStack.cards.size() - 13;
     while (cardStack.cards.size() > position) {
@@ -74,19 +90,44 @@ public class SpiderSolitaire {
     }
     state.sortedCards.add(moved);
     state.nextEvent(new State.MoveOutEvent(cardStackIndex, position));
-    // 2. update openIndex
-    assert cardStack.openIndex <= position;
-    if (cardStack.openIndex == position && cardStack.openIndex != 0) {
-      cardStack.openIndex--;
-    }// else (cardStack.openIndex < position || cardStack.openIndex == 0) do nothing
     return true;
+  }
+
+  private boolean updateIndexIfNeed(final int cardStackIndex) {
+    if (!state.isLegalCardStackIndex(cardStackIndex)) {
+      throw new IllegalArgumentException();
+    }
+    final State.CardStack cardStack = state.cardStacks.get(cardStackIndex);
+    // cardStack.cards is empty -> cardStack.openIndex should be [0, cardStack.cards.size] that is 0
+    if (cardStack.cards.isEmpty()) {
+      assert cardStack.openIndex >= 0;
+      if (cardStack.openIndex != 0) {
+        final int oldOpenIndex = cardStack.openIndex;
+        cardStack.openIndex = 0;
+        state.nextEvent(new State.UpdateOpenIndexEvent(cardStackIndex, oldOpenIndex, 0));
+        return true;
+      } else { // cardStack.openIndex == 0
+        return false;
+      }
+    }
+    // cardStack.cards nonempty -> cardStack.openIndex should be [0, cardStack.cards.size)
+    assert cardStack.openIndex <= cardStack.cards.size();
+    if (cardStack.openIndex > cardStack.cards.size() - 1) {
+      final int oldOpenIndex = cardStack.openIndex;
+      cardStack.openIndex = cardStack.cards.size() - 1;
+      state.nextEvent(
+          new State.UpdateOpenIndexEvent(cardStackIndex, oldOpenIndex, cardStack.openIndex));
+      return true;
+    } else {
+      return false;
+    }
   }
 
   public State getState() {
     return state;
   }
 
-  public boolean canMove(CardPosition from, CardPosition to) {
+  public boolean canMove(CardPosition from, CardPosition to) {//TODO check openIndex
     // * can move naturally
     if (!state.canMove(from, to)) {
       return false;
@@ -114,7 +155,7 @@ public class SpiderSolitaire {
     return true;
   }
 
-  public void move(CardPosition from, CardPosition to) {//TODO update openIndex
+  public void move(CardPosition from, CardPosition to) {
     if (!canMove(from, to)) {
       throw new IllegalArgumentException();
     }
@@ -273,6 +314,18 @@ public class SpiderSolitaire {
       public MoveOutEvent(int cardStackIndex, int cardIndex) {
         this.cardStackIndex = cardStackIndex;
         this.cardIndex = cardIndex;
+      }
+    }
+
+    public static class UpdateOpenIndexEvent {
+      public final int cardStackIndex;
+      public final int oldOpenIndex;
+      public final int newOpenIndex;
+
+      public UpdateOpenIndexEvent(int cardStackIndex, int oldOpenIndex, int newOpenIndex) {
+        this.cardStackIndex = cardStackIndex;
+        this.oldOpenIndex = oldOpenIndex;
+        this.newOpenIndex = newOpenIndex;
       }
     }
 
