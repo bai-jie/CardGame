@@ -27,7 +27,7 @@ public class SpiderSolitaires {
     return result;
   }
 
-  public static SpiderSolitaire.State newGame() {
+  public static SpiderSolitaire.State newGameState() {
     List<Card> cards = newCards(2, Card.Suit.HEART);
     cards = random(cards);
 
@@ -42,8 +42,12 @@ public class SpiderSolitaires {
     return result;
   }
 
+  public static SpiderSolitaire newGame() {
+    return new SpiderSolitaire(newGameState());
+  }
+
   public static SpiderSolitaire.State getSampleSpiderSolitaireState() {
-    SpiderSolitaire.State result = newGame();
+    SpiderSolitaire.State result = newGameState();
     for(SpiderSolitaire.State.CardStack stack : result.cardStacks) {
       stack.openIndex = 0;
     }

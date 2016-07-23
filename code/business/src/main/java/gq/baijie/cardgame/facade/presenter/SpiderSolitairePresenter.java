@@ -12,9 +12,9 @@ import rx.functions.Action1;
 
 public class SpiderSolitairePresenter {
 
-  private SpiderSolitaire game;
+  private final SpiderSolitaire game;
 
-  private SpiderSolitaireView view;
+  private final SpiderSolitaireView view;
 
   public SpiderSolitairePresenter(SpiderSolitaire game, SpiderSolitaireView view) {
     this.game = game;
@@ -24,7 +24,7 @@ public class SpiderSolitairePresenter {
 
   private void init() {
     // init view
-    view.init(game);
+    view.init(this);
     // bind game events to view
     final Observable<Object> eventBus = game.getState().getEventBus();
     eventBus.ofType(MoveEvent.class).subscribe(new Action1<MoveEvent>() {
@@ -58,22 +58,28 @@ public class SpiderSolitairePresenter {
     });
   }
 
-  public boolean canMoveCards(
-      int oldCardStackIndex, int oldCardIndex, int newCardStackIndex, int newCardIndex) {
+  public SpiderSolitaire getGame() {
+    return game;
+  }
+
+  public SpiderSolitaireView getView() {
+    return view;
+  }
+
+  public boolean canMoveCards(int oldCardStackIndex, int oldCardIndex, int newCardStackIndex) {
     return game.canMove(
         CardPosition.of(oldCardStackIndex, oldCardIndex),
-        CardPosition.of(newCardStackIndex, newCardIndex)
+        CardPosition.of(newCardStackIndex, 0)
     );
   }
 
-  public void moveCards(
-      int oldCardStackIndex, int oldCardIndex, int newCardStackIndex, int newCardIndex) {
-    if (!canMoveCards(oldCardStackIndex, oldCardIndex, newCardStackIndex, newCardIndex)) {
+  public void moveCards(int oldCardStackIndex, int oldCardIndex, int newCardStackIndex) {
+    if (!canMoveCards(oldCardStackIndex, oldCardIndex, newCardStackIndex)) {
       return;
     }
     game.move(
         CardPosition.of(oldCardStackIndex, oldCardIndex),
-        CardPosition.of(newCardStackIndex, newCardIndex)
+        CardPosition.of(newCardStackIndex, 0)
     );
   }
 

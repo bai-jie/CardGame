@@ -128,6 +128,11 @@ public class SpiderSolitaire {
   }
 
   public boolean canMove(CardPosition from, CardPosition to) {//TODO check openIndex
+    try {
+      to.cardIndex = state.cardStacks.get(to.cardStackIndex).cards.size();
+    } catch (IndexOutOfBoundsException e) {
+      //ignore
+    }
     // * can move naturally
     if (!state.canMove(from, to)) {
       return false;
@@ -156,6 +161,11 @@ public class SpiderSolitaire {
   }
 
   public void move(CardPosition from, CardPosition to) {
+    try {
+      to.cardIndex = state.cardStacks.get(to.cardStackIndex).cards.size();
+    } catch (IndexOutOfBoundsException e) {
+      //ignore
+    }
     if (!canMove(from, to)) {
       throw new IllegalArgumentException();
     }

@@ -1,11 +1,11 @@
 package gq.baijie.cardgame.facade.view;
 
-import gq.baijie.cardgame.business.SpiderSolitaire;
 import gq.baijie.cardgame.domain.entity.Card;
+import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
 
 public interface SpiderSolitaireView {
 
-  void init(SpiderSolitaire game);
+  void init(SpiderSolitairePresenter presenter);
 
   void moveCards(int oldCardStackIndex, int oldCardIndex, int newCardStackIndex, int newCardIndex);
 
