@@ -8,6 +8,7 @@ import android.support.percent.PercentLayoutHelper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.DragEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -201,39 +202,11 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
 
   private void setDragListener() {
     // for every card views
+    final OnTouchCardViewListener onTouchCardViewListener = new OnTouchCardViewListener();
     for (int cardStackIndex = 0; cardStackIndex < getChildCount(); cardStackIndex++) {
       final ViewGroup cardStackView = (ViewGroup) getChildAt(cardStackIndex);
       for (int cardIndex = 0; cardIndex < cardStackView.getChildCount(); cardIndex++) {
-        cardStackView.getChildAt(cardIndex).setLongClickable(true);
-        cardStackView.getChildAt(cardIndex).setOnLongClickListener(new View.OnLongClickListener() {
-          @Override
-          public boolean onLongClick(View v) {
-            final ViewGroup cardStackView = (ViewGroup) v.getParent();
-            final int cardIndex = cardStackView.indexOfChild(v);
-            final int cardStackIndex =
-                ((ViewGroup) cardStackView.getParent()).indexOfChild(cardStackView);
-            // * check this card can move
-            if (!presenter.getGame().canMove(cardStackIndex, cardIndex)) {
-              return false;
-            }
-            // move dragged card views to a new CardStackLayout
-            final CardStackLayout draggedCards = new CardStackLayout(v.getContext());
-            moveChildViews(cardStackView, cardIndex, draggedCards);
-            // start drag cards
-//            draggedCards.requestLayout();
-            draggedCards.measure(
-                View.MeasureSpec.makeMeasureSpec(cardStackView.getWidth(), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-            draggedCards.layout(0, 0, draggedCards.getMeasuredWidth(), draggedCards.getMeasuredHeight());
-            cardStackView.startDrag(
-                null,
-                new View.DragShadowBuilder(draggedCards),
-                new DragInfo(cardStackIndex, cardIndex, cardStackView, draggedCards),
-                0
-            );
-            return true;
-          }
-        });
+        cardStackView.getChildAt(cardIndex).setOnTouchListener(onTouchCardViewListener);
       }
     }
     // for every card stack views
@@ -241,6 +214,43 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
     for (int cardStackIndex = 0; cardStackIndex < getChildCount(); cardStackIndex++) {
       getChildAt(cardStackIndex).setOnDragListener(onDragCardListener);
     }
+  }
+
+  /**
+   * <strong>pre-condition</strong>:
+   * <ul>
+   *   <li>v is card view</li>
+   *   <li>card view's parent is card stack view(ViewGroup)</li>
+   *   <li>card stack view's parent is card stack list view(ViewGroup)</li>
+   * </ul>
+   * @param v should be card view
+   * @return start successfully(card view can move...)
+   */
+  private boolean startDrag(View v) {
+    final ViewGroup cardStackView = (ViewGroup) v.getParent();
+    final int cardIndex = cardStackView.indexOfChild(v);
+    final int cardStackIndex =
+        ((ViewGroup) cardStackView.getParent()).indexOfChild(cardStackView);
+    // * check this card can move
+    if (!presenter.getGame().canMove(cardStackIndex, cardIndex)) {
+      return false;
+    }
+    // move dragged card views to a new CardStackLayout
+    final CardStackLayout draggedCards = new CardStackLayout(v.getContext());
+    moveChildViews(cardStackView, cardIndex, draggedCards);
+    // start drag cards
+//            draggedCards.requestLayout();
+    draggedCards.measure(
+        View.MeasureSpec.makeMeasureSpec(cardStackView.getWidth(), View.MeasureSpec.EXACTLY),
+        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+    draggedCards.layout(0, 0, draggedCards.getMeasuredWidth(), draggedCards.getMeasuredHeight());
+    cardStackView.startDrag(
+        null,
+        new View.DragShadowBuilder(draggedCards),
+        new DragInfo(cardStackIndex, cardIndex, cardStackView, draggedCards),
+        0
+    );
+    return true;
   }
 
   private static class DragInfo {
@@ -262,6 +272,18 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
       this.originCardStackView = originCardStackView;
       this.cardsBeingDragged = cardsBeingDragged;
     }
+  }
+
+  private class OnTouchCardViewListener implements OnTouchListener {
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+      if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+        startDrag(v);
+      }
+      return false;
+    }
+
   }
 
   private static class OnDragCardListener implements View.OnDragListener {
