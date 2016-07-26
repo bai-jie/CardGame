@@ -127,25 +127,39 @@ public class SpiderSolitaire {
     return state;
   }
 
+  public boolean canMove(final int fromCardStackIndex, final int fromCardIndex) {
+    // * is legal card position
+    if (!state.hasCard(CardPosition.of(fromCardStackIndex, fromCardIndex))) {
+      return false;
+    }
+    // * from is open
+    //TODO
+    // * from is sequential //TODO check card's Suit
+    State.CardStack cardStackOfFrom = state.cardStacks.get(fromCardStackIndex);
+    Card lastCard = cardStackOfFrom.cards.get(fromCardIndex);
+    for (int i = fromCardIndex + 1; i < cardStackOfFrom.cards.size(); i++) {
+      final Card currentCard = cardStackOfFrom.cards.get(i);
+      if (lastCard.getRank().getId() != currentCard.getRank().getId() + 1) {
+        return false;
+      }
+      lastCard = currentCard;
+    }
+    return true;
+  }
+
   public boolean canMove(CardPosition from, CardPosition to) {//TODO check openIndex
     try {
       to.cardIndex = state.cardStacks.get(to.cardStackIndex).cards.size();
     } catch (IndexOutOfBoundsException e) {
       //ignore
     }
+    // * from can move
+    if (!canMove(from.cardStackIndex, from.cardIndex)) {
+      return false;
+    }
     // * can move naturally
     if (!state.canMove(from, to)) {
       return false;
-    }
-    // * from is sequential //TODO check card's Suit
-    State.CardStack cardStackOfFrom = state.cardStacks.get(from.cardStackIndex);
-    Card lastCard = cardStackOfFrom.cards.get(from.cardIndex);
-    for (int i = from.cardIndex + 1; i < cardStackOfFrom.cards.size(); i++) {
-      final Card currentCard = cardStackOfFrom.cards.get(i);
-      if (lastCard.getRank().getId() != currentCard.getRank().getId() + 1) {
-        return false;
-      }
-      lastCard = currentCard;
     }
     // * after moved is sequential that is:
     //   - case 1: to is empty card stack

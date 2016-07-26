@@ -212,6 +212,10 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
             final int cardIndex = cardStackView.indexOfChild(v);
             final int cardStackIndex =
                 ((ViewGroup) cardStackView.getParent()).indexOfChild(cardStackView);
+            // * check this card can move
+            if (!presenter.getGame().canMove(cardStackIndex, cardIndex)) {
+              return false;
+            }
             // move dragged card views to a new CardStackLayout
             final CardStackLayout draggedCards = new CardStackLayout(v.getContext());
             moveChildViews(cardStackView, cardIndex, draggedCards);
