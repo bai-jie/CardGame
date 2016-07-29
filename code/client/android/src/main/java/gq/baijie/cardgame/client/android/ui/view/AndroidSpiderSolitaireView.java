@@ -6,13 +6,15 @@ import android.os.Build;
 import android.support.percent.PercentFrameLayout;
 import android.support.percent.PercentLayoutHelper;
 import android.util.AttributeSet;
-import android.util.Log;
+import android.util.Pair;
 import android.view.DragEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.jakewharton.rxbinding.view.RxView;
 
 import gq.baijie.cardgame.business.SpiderSolitaire;
 import gq.baijie.cardgame.client.android.R;
@@ -22,6 +24,9 @@ import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
 import gq.baijie.cardgame.facade.view.SpiderSolitaireView;
 import rx.functions.Action1;
+import rx.observables.ConnectableObservable;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
 
 import static android.view.Gravity.CENTER_HORIZONTAL;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
@@ -200,6 +205,45 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
 
   // ########## Drag and Drop ##########
 
+  private final Subject<Pair<View, DragEvent>, Pair<View, DragEvent>> dragEvents = PublishSubject.create();
+
+  {
+    dragEvents.groupBy(event -> ((DragInfo) event.second.getLocalState())).subscribe(scope -> {
+      DragInfo state = scope.getKey();
+
+      ConnectableObservable<Pair<View, DragEvent>> publish = scope.takeWhile(e -> {
+        switch (e.second.getAction()) {
+          case DragEvent.ACTION_DRAG_STARTED:
+            state.unendedCounter++;
+            break;
+          case DragEvent.ACTION_DRAG_ENDED:
+            state.unendedCounter--;
+            break;
+        }
+        return state.unendedCounter > 0;
+      }).publish();
+
+
+      publish.filter(e->e.second.getAction() == DragEvent.ACTION_DROP).subscribe(e->{
+        final int destStackIndex = indexOfChild(e.first);
+        if (presenter.canMoveCards(state.originCardStackIndex, state.originCardIndex, destStackIndex)) {
+          forEachChild(state.cardsBeingDragged, view -> view.setVisibility(GONE));
+          state.droppedCardStackIndex = destStackIndex;
+        }
+      });
+
+      publish.toCompletable().subscribe(() -> {
+        moveChildViews(state.cardsBeingDragged, state.originCardStackView);
+        if (state.droppedCardStackIndex >= 0) {
+          presenter.moveCards(state.originCardStackIndex, state.originCardIndex, state.droppedCardStackIndex);
+        }
+      });
+
+      publish.connect();
+
+    });
+  }
+
   private void setDragListener() {
     // for every card views
     final OnTouchCardViewListener onTouchCardViewListener = new OnTouchCardViewListener();
@@ -209,11 +253,11 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
         cardStackView.getChildAt(cardIndex).setOnTouchListener(onTouchCardViewListener);
       }
     }
-    // for every card stack views
-    final OnDragCardListener onDragCardListener = new OnDragCardListener();
-    for (int cardStackIndex = 0; cardStackIndex < getChildCount(); cardStackIndex++) {
-      getChildAt(cardStackIndex).setOnDragListener(onDragCardListener);
-    }
+    // subscribe drag events emitted by card stack views
+    forEachChild(this, view -> RxView.drags(view)
+        .map(rawEvent -> Pair.create(view, rawEvent))
+        .subscribe(dragEvents)
+    );
   }
 
   /**
@@ -259,7 +303,8 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
     final ViewGroup originCardStackView;
     final ViewGroup cardsBeingDragged;
 
-    int droppedCardStackIndex;
+    int unendedCounter = 0;
+    int droppedCardStackIndex = -1;
 
     private DragInfo(
         int originCardStackIndex,
@@ -284,55 +329,6 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
       return false;
     }
 
-  }
-
-  private static class OnDragCardListener implements View.OnDragListener {
-    @Override
-    public boolean onDrag(View v, DragEvent event) {
-      ViewGroup view = (ViewGroup) v;//TODO
-      switch (event.getAction()) {
-        case DragEvent.ACTION_DRAG_STARTED:
-          AndroidSpiderSolitaireView parent = (AndroidSpiderSolitaireView) view.getParent();
-          int cardStackIndexOfView = parent.indexOfChild(view);
-          return parent.presenter.canMoveCards(
-              ((DragInfo) event.getLocalState()).originCardStackIndex,
-              ((DragInfo) event.getLocalState()).originCardIndex,
-              cardStackIndexOfView
-          );
-        case DragEvent.ACTION_DRAG_ENTERED:
-          return true;//TODO
-        case DragEvent.ACTION_DRAG_LOCATION:
-          return true;//TODO
-        case DragEvent.ACTION_DRAG_EXITED:
-          return true;//TODO
-        case DragEvent.ACTION_DROP:
-          forEachChild(((DragInfo) event.getLocalState()).cardsBeingDragged, new Action1<View>() {
-            @Override
-            public void call(View view) {
-              view.setVisibility(GONE);
-            }
-          });
-          ((DragInfo) event.getLocalState()).droppedCardStackIndex =
-              ((ViewGroup) view.getParent()).indexOfChild(view);
-          return true;
-        case DragEvent.ACTION_DRAG_ENDED:
-          DragInfo dragInfo = (DragInfo) event.getLocalState();
-          if (view == dragInfo.originCardStackView) {
-            moveChildViews(dragInfo.cardsBeingDragged, view);
-            if (event.getResult()) {
-              ((AndroidSpiderSolitaireView) view.getParent()).presenter.moveCards(
-                  dragInfo.originCardStackIndex,
-                  dragInfo.originCardIndex,
-                  dragInfo.droppedCardStackIndex
-              );
-            }
-          }
-          return true;
-        default:
-          Log.e("OnDragCardListener", "Unknown action type: " + event.getAction());
-          return false;
-      }
-    }
   }
 
   // ########## Drag and Drop End ##########
