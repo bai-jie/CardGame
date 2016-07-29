@@ -61,8 +61,8 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
     this.presenter = presenter;
     show(presenter.getGame().getState());
     //TODO new add Card?
-    setSelectListener();
-    setDragListener();
+    setSelectListener(this);
+    setDragListener(this);
     //TODO end
   }
 
@@ -174,7 +174,7 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
 
   // ########## Event Bus ##########
 
-  private void setSelectListener() {
+  private static void setSelectListener(ViewGroup cardStackListView) {
     final View.OnFocusChangeListener focusChangeListener = new View.OnFocusChangeListener() {
       @Override
       public void onFocusChange(View v, boolean hasFocus) {
@@ -190,15 +190,13 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
         v.requestFocusFromTouch();
       }
     };
-    for (int cardStackIndex = 0; cardStackIndex < getChildCount(); cardStackIndex++) {
-      final ViewGroup cardStackView = (ViewGroup) getChildAt(cardStackIndex);
-      for (int cardIndex = 0; cardIndex < cardStackView.getChildCount(); cardIndex++) {
-        final View cardView = cardStackView.getChildAt(cardIndex);
+    forEachChild(cardStackListView, cardStackView -> {
+      forEachChild((ViewGroup) cardStackView, cardView->{
         cardView.setFocusableInTouchMode(true);
         cardView.setOnFocusChangeListener(focusChangeListener);
         cardView.setOnClickListener(clickListener);
-      }
-    }
+      });
+    });
   }
 
   // ########## Event Bus End ##########
@@ -225,7 +223,7 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
 
 
       publish.filter(e->e.second.getAction() == DragEvent.ACTION_DROP).subscribe(e->{
-        final int destStackIndex = indexOfChild(e.first);
+        final int destStackIndex = ((ViewGroup) e.first.getParent()).indexOfChild(e.first);
         if (presenter.canMoveCards(state.originCardStackIndex, state.originCardIndex, destStackIndex)) {
           forEachChild(state.cardsBeingDragged, view -> view.setVisibility(GONE));
           state.droppedCardStackIndex = destStackIndex;
@@ -244,17 +242,16 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
     });
   }
 
-  private void setDragListener() {
+  private void setDragListener(ViewGroup cardStackListView) {
     // for every card views
     final OnTouchCardViewListener onTouchCardViewListener = new OnTouchCardViewListener();
-    for (int cardStackIndex = 0; cardStackIndex < getChildCount(); cardStackIndex++) {
-      final ViewGroup cardStackView = (ViewGroup) getChildAt(cardStackIndex);
-      for (int cardIndex = 0; cardIndex < cardStackView.getChildCount(); cardIndex++) {
-        cardStackView.getChildAt(cardIndex).setOnTouchListener(onTouchCardViewListener);
-      }
-    }
+    forEachChild(cardStackListView, cardStackView -> {
+      forEachChild((ViewGroup) cardStackView, cardView -> {
+        cardView.setOnTouchListener(onTouchCardViewListener);
+      });
+    });
     // subscribe drag events emitted by card stack views
-    forEachChild(this, view -> RxView.drags(view)
+    forEachChild(cardStackListView, view -> RxView.drags(view)
         .map(rawEvent -> Pair.create(view, rawEvent))
         .subscribe(dragEvents)
     );
