@@ -9,6 +9,8 @@ public interface SpiderSolitaireView {
 
   void setDrawingCardsView(DrawingCardsView view);
 
+  void setSortedCardsView(SortedCardsView view);
+
   void moveCards(int oldCardStackIndex, int oldCardIndex, int newCardStackIndex, int newCardIndex);
 
   void drawCards(Card[] cards);
