@@ -41,6 +41,8 @@ import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.moveChildV
 
 public class AndroidSpiderSolitaireView extends RelativeLayout implements SpiderSolitaireView {
 
+  private final Subject<Object, Object> internalEventBus = PublishSubject.create();
+
   private SpiderSolitairePresenter presenter;
 
   private ViewGroup cardStackListView;
@@ -68,11 +70,9 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   @Override
   public void init(SpiderSolitairePresenter presenter) {
     this.presenter = presenter;
+    setSelectListener();
+    setDragListener();
     show(presenter.getGame().getState());
-    //TODO new add Card?
-    setSelectListener(cardStackListView);
-    setDragListener(cardStackListView);
-    //TODO end
   }
 
   @Override
@@ -167,7 +167,7 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     addView(cardStackListView, layoutParams);
   }
 
-  private static ViewGroup newCardStackListView(
+  private ViewGroup newCardStackListView(
       Context context, List<SpiderSolitaire.State.CardStack> cardStacks) {
     LinearLayout result = new LinearLayout(context);
     result.setOrientation(LinearLayout.HORIZONTAL);
@@ -179,15 +179,16 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     return result;
   }
 
-  private static View newCardStackView(Context context, SpiderSolitaire.State.CardStack cardStack) {
+  private View newCardStackView(Context context, SpiderSolitaire.State.CardStack cardStack) {
     CardStackLayout result = new CardStackLayout(context);
     for (Card card : cardStack.cards) {
       result.addView(newCardView(context, card), MATCH_PARENT, WRAP_CONTENT);
     }
+    internalEventBus.onNext(new NewCardStackViewEvent(result));
     return result;
   }
 
-  private static View newCardView(Context context, Card card) {
+  private View newCardView(Context context, Card card) {
     TextView content = new TextView(context);
     content.setText(toString(card));
     content.setBackgroundResource(R.drawable.card_background);
@@ -200,6 +201,8 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     // https://en.wikipedia.org/wiki/Standard_52-card_deck
     layoutInfo.aspectRatio = 0.71428571428571428571428571428571f;// 2.5 / 3.5
     layoutInfo.widthPercent = 0.9f;
+
+    internalEventBus.onNext(new NewCardViewEvent(container));
     return container;
   }
 
@@ -241,11 +244,28 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     }
     return result;
   }
+
+  private static class NewCardViewEvent {
+    final View cardView;
+
+    private NewCardViewEvent(View cardView) {
+      this.cardView = cardView;
+    }
+  }
+
+  private static class NewCardStackViewEvent {
+    final ViewGroup cardStackView;
+
+    private NewCardStackViewEvent(ViewGroup cardStackView) {
+      this.cardStackView = cardStackView;
+    }
+  }
+
   // ########## For init End ##########
 
   // ########## Event Bus ##########
 
-  private static void setSelectListener(ViewGroup cardStackListView) {
+  private void setSelectListener() {
     final View.OnFocusChangeListener focusChangeListener = new View.OnFocusChangeListener() {
       @Override
       public void onFocusChange(View v, boolean hasFocus) {
@@ -261,12 +281,10 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
         v.requestFocusFromTouch();
       }
     };
-    forEachChild(cardStackListView, cardStackView -> {
-      forEachChild((ViewGroup) cardStackView, cardView->{
-        cardView.setFocusableInTouchMode(true);
-        cardView.setOnFocusChangeListener(focusChangeListener);
-        cardView.setOnClickListener(clickListener);
-      });
+    internalEventBus.ofType(NewCardViewEvent.class).map(e -> e.cardView).subscribe(cardView -> {
+      cardView.setFocusableInTouchMode(true);
+      cardView.setOnFocusChangeListener(focusChangeListener);
+      cardView.setOnClickListener(clickListener);
     });
   }
 
@@ -274,13 +292,14 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   // ########## Drag and Drop ##########
 
-  private final Subject<Pair<View, DragEvent>, Pair<View, DragEvent>> dragEvents = PublishSubject.create();
+  private final Subject<Pair<? extends View, DragEvent>, Pair<? extends View, DragEvent>> dragEvents
+      = PublishSubject.create();
 
   {
     dragEvents.groupBy(event -> ((DragInfo) event.second.getLocalState())).subscribe(scope -> {
       DragInfo state = scope.getKey();
 
-      ConnectableObservable<Pair<View, DragEvent>> publish = scope.takeWhile(e -> {
+      ConnectableObservable<Pair<? extends View, DragEvent>> publish = scope.takeWhile(e -> {
         switch (e.second.getAction()) {
           case DragEvent.ACTION_DRAG_STARTED:
             state.unendedCounter++;
@@ -313,19 +332,19 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     });
   }
 
-  private void setDragListener(ViewGroup cardStackListView) {
+  private void setDragListener() {
     // for every card views
     final OnTouchCardViewListener onTouchCardViewListener = new OnTouchCardViewListener();
-    forEachChild(cardStackListView, cardStackView -> {
-      forEachChild((ViewGroup) cardStackView, cardView -> {
-        cardView.setOnTouchListener(onTouchCardViewListener);
-      });
-    });
+    internalEventBus
+        .ofType(NewCardViewEvent.class)
+        .subscribe(e -> e.cardView.setOnTouchListener(onTouchCardViewListener));
     // subscribe drag events emitted by card stack views
-    forEachChild(cardStackListView, view -> RxView.drags(view)
-        .map(rawEvent -> Pair.create(view, rawEvent))
-        .subscribe(dragEvents)
-    );
+    internalEventBus.ofType(NewCardStackViewEvent.class).map(e -> e.cardStackView)
+        .subscribe(view -> {
+          RxView.drags(view)
+              .map(rawEvent -> Pair.create(view, rawEvent))
+              .subscribe(dragEvents);
+        });
   }
 
   /**
