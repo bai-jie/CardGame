@@ -71,7 +71,11 @@ public class SpiderSolitaire {
       return false;
     }
 
+    // * the last card should be A
     Card biggestCard = cardStack.cards.get(cardStack.cards.size() - 1);
+    if (biggestCard.getRank().getId() != 1) {
+      return false;
+    }
     for (int i = cardStack.cards.size() - 2; i >= 0 && i >= cardStack.openIndex; i--) {
       Card currentCard = cardStack.cards.get(i);
       // * is sequential
@@ -79,6 +83,7 @@ public class SpiderSolitaire {
         biggestCard = currentCard;
       }
     }
+    // * the biggest card should be K
     if (biggestCard.getRank() != Card.Rank.KING) {
       return false;
     }
