@@ -12,9 +12,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.jakewharton.rxbinding.view.RxView;
+
+import java.util.List;
 
 import gq.baijie.cardgame.business.SpiderSolitaire;
 import gq.baijie.cardgame.client.android.R;
@@ -28,15 +31,18 @@ import rx.observables.ConnectableObservable;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-import static android.view.Gravity.CENTER_HORIZONTAL;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.forEachChild;
 import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.moveChildViews;
 
-public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSolitaireView {
+public class AndroidSpiderSolitaireView extends RelativeLayout implements SpiderSolitaireView {
 
   private SpiderSolitairePresenter presenter;
+
+  private ViewGroup cardStackListView;
+  private View drawingCardsView;
+  private View sortedCardsView;
 
   public AndroidSpiderSolitaireView(Context context) {
     super(context);
@@ -61,16 +67,16 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
     this.presenter = presenter;
     show(presenter.getGame().getState());
     //TODO new add Card?
-    setSelectListener(this);
-    setDragListener(this);
+    setSelectListener(cardStackListView);
+    setDragListener(cardStackListView);
     //TODO end
   }
 
   @Override
   public void moveCards(
       int oldCardStackIndex, int oldCardIndex, int newCardStackIndex, int newCardIndex) {
-    final ViewGroup from = (ViewGroup) getChildAt(oldCardStackIndex);
-    final ViewGroup to = (ViewGroup) getChildAt(newCardStackIndex);
+    final ViewGroup from = (ViewGroup) cardStackListView.getChildAt(oldCardStackIndex);
+    final ViewGroup to = (ViewGroup) cardStackListView.getChildAt(newCardStackIndex);
     forEachChild(from, oldCardIndex, new Action1<View>() {
       @Override
       public void call(View view) {
@@ -83,13 +89,13 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
   @Override
   public void drawCards(Card[] cards) {
     for (int i = 0; i < cards.length; i++) {
-      ((ViewGroup) getChildAt(i)).addView(newCardView(getContext(), cards[i]));
+      ((ViewGroup) cardStackListView.getChildAt(i)).addView(newCardView(getContext(), cards[i]));
     }
   }
 
   @Override
   public void moveOutSortedCards(int cardStackIndex, int cardIndex) {
-    WidgetUtils.removeViews((ViewGroup) getChildAt(cardStackIndex), cardIndex);
+    WidgetUtils.removeViews((ViewGroup) cardStackListView.getChildAt(cardStackIndex), cardIndex);
     //TODO update SortedCardsView
   }
 
@@ -101,11 +107,47 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
   // ########## For init, drawCards ##########
   private void show(SpiderSolitaire.State state) {
     removeAllViews();//TODO do this?
-    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
+    // * add CardStackListView
+    LayoutParams layoutParams = new LayoutParams(MATCH_PARENT, MATCH_PARENT);
+    layoutParams.addRule(ALIGN_PARENT_TOP);
+    layoutParams.addRule(ALIGN_PARENT_LEFT);
+    layoutParams.addRule(ALIGN_PARENT_RIGHT);
+    layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+    cardStackListView = newCardStackListView(getContext(), state.cardStacks);
+    addView(cardStackListView, layoutParams);
+    // * add DrawingCardsView
+    layoutParams = new LayoutParams(
+        getResources().getDimensionPixelSize(R.dimen.default_card_width),
+        getResources().getDimensionPixelSize(R.dimen.default_card_height));
+    layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
+    layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
+    layoutParams.addRule(ALIGN_PARENT_RIGHT);
+    layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+    drawingCardsView = newDrawingCardsView(getContext());
+    drawingCardsView.setId(R.id.drawing_card);
+    addView(drawingCardsView, layoutParams);
+    // * add SortedCardsView
+    layoutParams = new LayoutParams(
+        getResources().getDimensionPixelSize(R.dimen.default_card_width),
+        getResources().getDimensionPixelSize(R.dimen.default_card_height));
+    layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
+    layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
+    layoutParams.addRule(LEFT_OF, R.id.drawing_card);
+    layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+    sortedCardsView = newSortedCardsView(getContext());
+    addView(sortedCardsView, layoutParams);
+  }
 
-    for (SpiderSolitaire.State.CardStack cardStack : state.cardStacks) {
-      addView(newCardStackView(getContext(), cardStack), layoutParams);
+  private static ViewGroup newCardStackListView(
+      Context context, List<SpiderSolitaire.State.CardStack> cardStacks) {
+    LinearLayout result = new LinearLayout(context);
+    result.setOrientation(LinearLayout.HORIZONTAL);
+    // add card stack views
+    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
+    for (SpiderSolitaire.State.CardStack cardStack : cardStacks) {
+      result.addView(newCardStackView(result.getContext(), cardStack), layoutParams);
     }
+    return result;
   }
 
   private static View newCardStackView(Context context, SpiderSolitaire.State.CardStack cardStack) {
@@ -130,6 +172,20 @@ public class AndroidSpiderSolitaireView extends LinearLayout implements SpiderSo
     layoutInfo.aspectRatio = 0.71428571428571428571428571428571f;// 2.5 / 3.5
     layoutInfo.widthPercent = 0.9f;
     return container;
+  }
+
+  private static View newSortedCardsView(Context context) {
+    TextView content = new TextView(context);
+    content.setBackgroundResource(R.drawable.card_background);
+    content.setText("sorted cards");
+    return content;
+  }
+
+  private static View newDrawingCardsView(Context context) {
+    TextView content = new TextView(context);
+    content.setBackgroundResource(R.drawable.card_background);
+    content.setText("drawing cards");
+    return content;
   }
 
   private static String toString(Card card) {
