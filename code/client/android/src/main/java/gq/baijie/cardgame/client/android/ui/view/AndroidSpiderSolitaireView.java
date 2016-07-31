@@ -3,6 +3,7 @@ package gq.baijie.cardgame.client.android.ui.view;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.percent.PercentFrameLayout;
 import android.support.percent.PercentLayoutHelper;
 import android.util.AttributeSet;
@@ -25,6 +26,7 @@ import gq.baijie.cardgame.client.android.ui.widget.CardStackLayout;
 import gq.baijie.cardgame.client.android.ui.widget.WidgetUtils;
 import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
+import gq.baijie.cardgame.facade.view.DrawingCardsView;
 import gq.baijie.cardgame.facade.view.SpiderSolitaireView;
 import rx.functions.Action1;
 import rx.observables.ConnectableObservable;
@@ -73,6 +75,30 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   }
 
   @Override
+  public void setDrawingCardsView(@NonNull DrawingCardsView view) {
+    if (drawingCardsView == view) {
+      return;
+    }
+    if (!(view instanceof AndroidDrawingCardsView)) {
+      throw new UnsupportedOperationException("only support AndroidDrawingCardsView now");
+    }
+    AndroidDrawingCardsView drawingCardsView = (AndroidDrawingCardsView) view;
+    drawingCardsView.setId(R.id.drawing_card);
+    LayoutParams layoutParams = new LayoutParams(
+        getResources().getDimensionPixelSize(R.dimen.default_card_width),
+        getResources().getDimensionPixelSize(R.dimen.default_card_height));
+    layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
+    layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
+    layoutParams.addRule(ALIGN_PARENT_RIGHT);
+    layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+    if (this.drawingCardsView != null) {
+      removeView(this.drawingCardsView);
+    }
+    this.drawingCardsView = drawingCardsView;
+    addView(drawingCardsView, layoutParams);
+  }
+
+  @Override
   public void moveCards(
       int oldCardStackIndex, int oldCardIndex, int newCardStackIndex, int newCardIndex) {
     final ViewGroup from = (ViewGroup) cardStackListView.getChildAt(oldCardStackIndex);
@@ -115,17 +141,6 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     layoutParams.addRule(ALIGN_PARENT_BOTTOM);
     cardStackListView = newCardStackListView(getContext(), state.cardStacks);
     addView(cardStackListView, layoutParams);
-    // * add DrawingCardsView
-    layoutParams = new LayoutParams(
-        getResources().getDimensionPixelSize(R.dimen.default_card_width),
-        getResources().getDimensionPixelSize(R.dimen.default_card_height));
-    layoutParams.rightMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
-    layoutParams.bottomMargin = getResources().getDimensionPixelSize(R.dimen.default_card_margin);
-    layoutParams.addRule(ALIGN_PARENT_RIGHT);
-    layoutParams.addRule(ALIGN_PARENT_BOTTOM);
-    drawingCardsView = newDrawingCardsView(getContext());
-    drawingCardsView.setId(R.id.drawing_card);
-    addView(drawingCardsView, layoutParams);
     // * add SortedCardsView
     layoutParams = new LayoutParams(
         getResources().getDimensionPixelSize(R.dimen.default_card_width),
@@ -178,13 +193,6 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     TextView content = new TextView(context);
     content.setBackgroundResource(R.drawable.card_background);
     content.setText("sorted cards");
-    return content;
-  }
-
-  private static View newDrawingCardsView(Context context) {
-    TextView content = new TextView(context);
-    content.setBackgroundResource(R.drawable.card_background);
-    content.setText("drawing cards");
     return content;
   }
 

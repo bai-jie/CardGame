@@ -6,6 +6,7 @@ import gq.baijie.cardgame.business.SpiderSolitaire.State.DrawCardsEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.MoveEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.MoveOutEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.UpdateOpenIndexEvent;
+import gq.baijie.cardgame.facade.view.DrawingCardsView;
 import gq.baijie.cardgame.facade.view.SpiderSolitaireView;
 import rx.Observable;
 import rx.functions.Action1;
@@ -16,15 +17,21 @@ public class SpiderSolitairePresenter {
 
   private final SpiderSolitaireView view;
 
-  public SpiderSolitairePresenter(SpiderSolitaire game, SpiderSolitaireView view) {
+  private final DrawingCardsView drawingCardsView;
+
+  public SpiderSolitairePresenter(
+      SpiderSolitaire game, SpiderSolitaireView view, DrawingCardsView drawingCardsView) {
     this.game = game;
     this.view = view;
+    this.drawingCardsView = drawingCardsView;
     init();
   }
 
   private void init() {
     // init view
     view.init(this);
+    drawingCardsView.setDecks(game.getState().cardsForDrawing.size() / 10);
+    view.setDrawingCardsView(drawingCardsView);
     // bind game events to view
     final Observable<Object> eventBus = game.getState().getEventBus();
     eventBus.ofType(MoveEvent.class).subscribe(new Action1<MoveEvent>() {
@@ -42,6 +49,7 @@ public class SpiderSolitairePresenter {
       @Override
       public void call(DrawCardsEvent drawCardsEvent) {
         view.drawCards(drawCardsEvent.drawnCards);
+        drawingCardsView.setDecks(game.getState().cardsForDrawing.size() / 10);
       }
     });
     eventBus.ofType(MoveOutEvent.class).subscribe(new Action1<MoveOutEvent>() {
@@ -56,6 +64,14 @@ public class SpiderSolitairePresenter {
         view.updateOpenIndex(event.cardStackIndex, event.newOpenIndex);
       }
     });
+    // bind events from drawingCardsView
+    drawingCardsView.getEventBus().ofType(DrawingCardsView.DrawEvent.class).subscribe(
+        new Action1<DrawingCardsView.DrawEvent>() {
+          @Override
+          public void call(DrawingCardsView.DrawEvent drawEvent) {
+            drawCards();
+          }
+        });
   }
 
   public SpiderSolitaire getGame() {
