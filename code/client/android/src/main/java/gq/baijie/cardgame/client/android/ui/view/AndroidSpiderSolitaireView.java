@@ -4,8 +4,6 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.support.annotation.NonNull;
-import android.support.percent.PercentFrameLayout;
-import android.support.percent.PercentLayoutHelper;
 import android.util.AttributeSet;
 import android.util.Pair;
 import android.view.DragEvent;
@@ -15,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 import com.jakewharton.rxbinding.view.RxView;
 
@@ -140,7 +137,7 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   @Override
   public void drawCards(Card[] cards) {
     for (int i = 0; i < cards.length; i++) {
-      ((ViewGroup) cardStackListView.getChildAt(i)).addView(newCardView(getContext(), cards[i]));
+      ((ViewGroup) cardStackListView.getChildAt(i)).addView(newCardView(getContext(), cards[i], true));
     }
   }
 
@@ -162,13 +159,22 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       int movedCardStackIndex, int movedCardIndex, Card[] movedCards) {
     final ViewGroup cardStackView = (ViewGroup) cardStackListView.getChildAt(movedCardStackIndex);
     for (Card card : movedCards) {
-      cardStackView.addView(newCardView(cardStackView.getContext(), card));
+      cardStackView.addView(newCardView(cardStackView.getContext(), card, true));
     }
   }
 
   @Override
-  public void updateOpenIndex(int cardStackIndex, int newOpenIndex) {
-    //TODO
+  public void updateOpenIndex(int cardStackIndex, int oldOpenIndex, int newOpenIndex) {
+    final ViewGroup cardStackView = (ViewGroup) cardStackListView.getChildAt(cardStackIndex);
+    if (oldOpenIndex >= newOpenIndex) {
+      for (int i = newOpenIndex; i < oldOpenIndex; i++) {
+        ((AndroidCardView) cardStackView.getChildAt(i)).setOpen(true);
+      }
+    } else { // undo updateOpenIndex (oldOpenIndex < newOpenIndex)
+      for (int i = oldOpenIndex; i < newOpenIndex; i++) {
+        ((AndroidCardView) cardStackView.getChildAt(i)).setOpen(false);
+      }
+    }
   }
 
   // ########## For init, drawCards ##########
@@ -198,67 +204,17 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   private View newCardStackView(Context context, SpiderSolitaire.State.CardStack cardStack) {
     CardStackLayout result = new CardStackLayout(context);
-    for (Card card : cardStack.cards) {
-      result.addView(newCardView(context, card), MATCH_PARENT, WRAP_CONTENT);
+    for (int i = 0; i < cardStack.cards.size(); i++) {
+      View cardView = newCardView(context, cardStack.cards.get(i), i >= cardStack.getOpenIndex());
+      result.addView(cardView, MATCH_PARENT, WRAP_CONTENT);
     }
     internalEventBus.onNext(new NewCardStackViewEvent(result));
     return result;
   }
 
-  private View newCardView(Context context, Card card) {
-    TextView content = new TextView(context);
-    content.setText(toString(card));
-    content.setBackgroundResource(R.drawable.card_background);
-
-    PercentFrameLayout container = new PercentFrameLayout(context);
-    container.addView(content, 0, 0);
-    ((PercentFrameLayout.LayoutParams) content.getLayoutParams()).gravity = CENTER_HORIZONTAL;
-    final PercentLayoutHelper.PercentLayoutInfo layoutInfo =
-        ((PercentFrameLayout.LayoutParams) content.getLayoutParams()).getPercentLayoutInfo();
-    // https://en.wikipedia.org/wiki/Standard_52-card_deck
-    layoutInfo.aspectRatio = 0.71428571428571428571428571428571f;// 2.5 / 3.5
-    layoutInfo.widthPercent = 0.9f;
-
-    internalEventBus.onNext(new NewCardViewEvent(container));
-    return container;
-  }
-
-  private static String toString(Card card) {
-    String result;
-    switch (card.getSuit()) {
-      case CLUB:
-        result = "♣";
-        break;
-      case DIAMOND:
-        result = "♦";
-        break;
-      case HEART:
-        result = "♥";
-        break;
-      case SPADE:
-        result = "♠";
-        break;
-      default:
-        result = "";
-        break;
-    }
-    switch (card.getRank()) {
-      case ACE:
-        result += "A";
-        break;
-      case JACK:
-        result += "J";
-        break;
-      case QUEEN:
-        result += "Q";
-        break;
-      case KING:
-        result += "K";
-        break;
-      default:
-        result += card.getRank().getId();
-        break;
-    }
+  private View newCardView(Context context, Card card, boolean open) {
+    final AndroidCardView result = new AndroidCardView(context, card, open);
+    internalEventBus.onNext(new NewCardViewEvent(result));
     return result;
   }
 

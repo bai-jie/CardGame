@@ -74,7 +74,7 @@ public class SpiderSolitairePresenter {
     eventBus.ofType(UpdateOpenIndexEvent.class).subscribe(new Action1<UpdateOpenIndexEvent>() {
       @Override
       public void call(UpdateOpenIndexEvent event) {
-        view.updateOpenIndex(event.cardStackIndex, event.newOpenIndex);
+        view.updateOpenIndex(event.cardStackIndex, event.oldOpenIndex, event.newOpenIndex);
       }
     });
     eventBus.ofType(UndoEvent.class).subscribe(new Action1<UndoEvent>() {
@@ -131,7 +131,8 @@ public class SpiderSolitairePresenter {
   }
 
   private void onUndoUpdateOpenIndex(UpdateOpenIndexEvent undoneEvent) {
-    view.updateOpenIndex(undoneEvent.cardStackIndex, undoneEvent.oldOpenIndex);
+    view.updateOpenIndex(
+        undoneEvent.cardStackIndex, undoneEvent.newOpenIndex, undoneEvent.oldOpenIndex);
   }
 
   private void onUndoMoveOutSortedCards(MoveOutEvent undoneEvent) {

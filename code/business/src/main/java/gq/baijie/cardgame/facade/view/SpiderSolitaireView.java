@@ -21,6 +21,6 @@ public interface SpiderSolitaireView {
 
   void undoMoveOutSortedCards(int movedCardStackIndex, int movedCardIndex, Card[] movedCards);
 
-  void updateOpenIndex(int cardStackIndex, int newOpenIndex);
+  void updateOpenIndex(int cardStackIndex, int oldOpenIndex, int newOpenIndex);
 
 }

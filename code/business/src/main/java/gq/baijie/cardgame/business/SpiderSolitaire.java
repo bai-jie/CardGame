@@ -388,6 +388,10 @@ public class SpiderSolitaire {
        * == 0 if cards.isEmpty()
        */
       int openIndex;
+
+      public int getOpenIndex() {
+        return openIndex;
+      }
     }
 
     public static class MoveEvent {
