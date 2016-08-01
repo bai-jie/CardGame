@@ -43,7 +43,7 @@ public class SpiderSolitaires {
   }
 
   public static SpiderSolitaire newGame() {
-    return new SpiderSolitaire(newGameState());
+    return new SpiderSolitaire(newGameState(), new RamEventLogger<>());
   }
 
   public static SpiderSolitaire.State getSampleSpiderSolitaireState() {

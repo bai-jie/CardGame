@@ -18,8 +18,11 @@ public class SpiderSolitaire {
 
   private final State state;
 
-  public SpiderSolitaire(State state) {
+  private final EventLogger<Object> eventLogger;
+
+  public SpiderSolitaire(State state, EventLogger<Object> eventLogger) {
     this.state = state;
+    this.eventLogger = eventLogger;
     init();
   }
 
@@ -59,6 +62,16 @@ public class SpiderSolitaire {
             updateIndexIfNeed(moveOutEvent.cardStackIndex);
           }
         });
+    // * record events to support undo operation
+    state.getEventBus().subscribe(new Action1<Object>() {
+      @Override
+      public void call(Object event) {
+        // ** skip undo events
+        if (!(event instanceof State.UndoEvent)) {
+          eventLogger.push(event);
+        }
+      }
+    });
   }
 
   private boolean checkIsSortedOut(final int cardStackIndex) {
@@ -98,6 +111,11 @@ public class SpiderSolitaire {
     return true;
   }
 
+  private void undoSortedOut(State.MoveOutEvent undoneEvent) {
+    final List<Card> moved = state.sortedCards.remove(state.sortedCards.size() - 1);
+    state.cardStacks.get(undoneEvent.cardStackIndex).cards.addAll(undoneEvent.cardIndex, moved);
+  }
+
   private boolean updateIndexIfNeed(final int cardStackIndex) {
     if (!state.isLegalCardStackIndex(cardStackIndex)) {
       throw new IllegalArgumentException();
@@ -126,6 +144,10 @@ public class SpiderSolitaire {
     } else {
       return false;
     }
+  }
+
+  private void undoUpdateOpenIndex(State.UpdateOpenIndexEvent undoneEvent) {
+    state.cardStacks.get(undoneEvent.cardStackIndex).openIndex = undoneEvent.oldOpenIndex;
   }
 
   public State getState() {
@@ -191,6 +213,10 @@ public class SpiderSolitaire {
     state.move(from, to);
   }
 
+  private void undoMove(State.MoveEvent undoneEvent) {
+    state.moveWithoutEvent(undoneEvent.newPosition, undoneEvent.oldPosition);
+  }
+
   public boolean canDraw() {
     // * can draw naturally
     if (!state.canDraw()) {
@@ -210,6 +236,42 @@ public class SpiderSolitaire {
       throw new IllegalStateException();
     }
     state.draw();
+  }
+
+  public boolean canUndo() {
+    return !eventLogger.isEmpty();
+  }
+
+  public boolean undo() {
+    if (!canUndo()) {
+      return false;
+    }
+    Object lastEvent;
+    do {
+      lastEvent = eventLogger.pop();
+      doUndo(lastEvent);
+      state.nextEvent(new State.UndoEvent(lastEvent));
+    } while (!isPlayerEvent(lastEvent));
+    return true;
+  }
+
+  private void doUndo(Object undoneEvent) {
+    Class<?> eventClass = undoneEvent.getClass();
+    if (eventClass.equals(State.MoveEvent.class)) {
+      undoMove((State.MoveEvent) undoneEvent);
+    } else if (eventClass.equals(State.DrawCardsEvent.class)) {
+      state.undoDraw();
+    } else if (eventClass.equals(State.UpdateOpenIndexEvent.class)) {
+      undoUpdateOpenIndex((State.UpdateOpenIndexEvent) undoneEvent);
+    } else if (eventClass.equals(State.MoveOutEvent.class)) {
+      undoSortedOut((State.MoveOutEvent) undoneEvent);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static boolean isPlayerEvent(Object event) {
+    return event instanceof State.MoveEvent || event instanceof State.DrawCardsEvent;
   }
 
   public static class State {
@@ -277,7 +339,7 @@ public class SpiderSolitaire {
       return true;
     }
 
-    void move(CardPosition from, CardPosition to) {
+    void moveWithoutEvent(CardPosition from, CardPosition to) {
       if (!canMove(from, to)) {
         throw new IllegalArgumentException();
       }
@@ -286,6 +348,10 @@ public class SpiderSolitaire {
       while (src.size() > from.cardIndex) {
         dest.add(src.remove(from.cardIndex));
       }
+    }
+
+    void move(CardPosition from, CardPosition to) {
+      moveWithoutEvent(from, to);
       nextEvent(new MoveEvent(from, to));
     }
 
@@ -305,6 +371,13 @@ public class SpiderSolitaire {
         cardStacks.get(i).cards.add(card);
       }
       nextEvent(new DrawCardsEvent(cards));
+    }
+
+    private void undoDraw() {
+      for (int i = 9; i >= 0; i--) {
+        final List<Card> cards = cardStacks.get(i).cards;
+        cardsForDrawing.add(cards.remove(cards.size() - 1));
+      }
     }
 
     public static class CardStack {
@@ -355,6 +428,14 @@ public class SpiderSolitaire {
         this.cardStackIndex = cardStackIndex;
         this.oldOpenIndex = oldOpenIndex;
         this.newOpenIndex = newOpenIndex;
+      }
+    }
+
+    public static class UndoEvent {
+      public final Object undoneEvent;
+
+      public UndoEvent(Object undoneEvent) {
+        this.undoneEvent = undoneEvent;
       }
     }
 

@@ -6,7 +6,7 @@ public class SpiderSolitaireTestUtils {
 
   public static SpiderSolitaire newEmptyGame() {
     SpiderSolitaire.State state = new SpiderSolitaire.State();
-    return new SpiderSolitaire(state);
+    return new SpiderSolitaire(state, new RamEventLogger<>());
   }
 
   public static Card newCard(int id) {
