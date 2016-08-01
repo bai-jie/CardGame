@@ -15,7 +15,11 @@ public interface SpiderSolitaireView {
 
   void drawCards(Card[] cards);
 
+  void undoDrawCards(Card[] drawnCards);
+
   void moveOutSortedCards(int cardStackIndex, int cardIndex);
+
+  void undoMoveOutSortedCards(int movedCardStackIndex, int movedCardIndex, Card[] movedCards);
 
   void updateOpenIndex(int cardStackIndex, int newOpenIndex);
 

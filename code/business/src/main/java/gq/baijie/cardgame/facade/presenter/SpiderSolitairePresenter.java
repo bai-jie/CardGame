@@ -5,7 +5,9 @@ import gq.baijie.cardgame.business.SpiderSolitaire.CardPosition;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.DrawCardsEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.MoveEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.MoveOutEvent;
+import gq.baijie.cardgame.business.SpiderSolitaire.State.UndoEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.UpdateOpenIndexEvent;
+import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.view.DrawingCardsView;
 import gq.baijie.cardgame.facade.view.SortedCardsView;
 import gq.baijie.cardgame.facade.view.SpiderSolitaireView;
@@ -38,9 +40,9 @@ public class SpiderSolitairePresenter {
   private void init() {
     // init view
     view.init(this);
-    drawingCardsView.setDecks(game.getState().cardsForDrawing.size() / 10);
+    updateDrawingCardsView();
     view.setDrawingCardsView(drawingCardsView);
-    sortedCardsView.setDecks(game.getState().sortedCards.size());
+    updateSortedCardsView();
     view.setSortedCardsView(sortedCardsView);
     // bind game events to view
     final Observable<Object> eventBus = game.getState().getEventBus();
@@ -59,20 +61,26 @@ public class SpiderSolitairePresenter {
       @Override
       public void call(DrawCardsEvent drawCardsEvent) {
         view.drawCards(drawCardsEvent.drawnCards);
-        drawingCardsView.setDecks(game.getState().cardsForDrawing.size() / 10);
+        updateDrawingCardsView();
       }
     });
     eventBus.ofType(MoveOutEvent.class).subscribe(new Action1<MoveOutEvent>() {
       @Override
       public void call(MoveOutEvent moveOutEvent) {
         view.moveOutSortedCards(moveOutEvent.cardStackIndex, moveOutEvent.cardIndex);
-        sortedCardsView.setDecks(game.getState().sortedCards.size());
+        updateSortedCardsView();
       }
     });
     eventBus.ofType(UpdateOpenIndexEvent.class).subscribe(new Action1<UpdateOpenIndexEvent>() {
       @Override
       public void call(UpdateOpenIndexEvent event) {
         view.updateOpenIndex(event.cardStackIndex, event.newOpenIndex);
+      }
+    });
+    eventBus.ofType(UndoEvent.class).subscribe(new Action1<UndoEvent>() {
+      @Override
+      public void call(UndoEvent undoEvent) {
+        onUndo(undoEvent);
       }
     });
     // bind events from drawingCardsView
@@ -83,6 +91,57 @@ public class SpiderSolitairePresenter {
             drawCards();
           }
         });
+  }
+
+  private void updateDrawingCardsView() {
+    drawingCardsView.setDecks(game.getState().cardsForDrawing.size() / 10);
+  }
+
+  private void updateSortedCardsView() {
+    sortedCardsView.setDecks(game.getState().sortedCards.size());
+  }
+
+  private void onUndo(UndoEvent undoEvent) {
+    final Object undoneEvent = undoEvent.undoneEvent;
+    Class<?> eventClass = undoneEvent.getClass();
+    if (eventClass.equals(MoveEvent.class)) {
+      onUndoMove((MoveEvent) undoneEvent);
+    } else if (eventClass.equals(DrawCardsEvent.class)) {
+      onUndoDraw((DrawCardsEvent) undoneEvent);
+    } else if (eventClass.equals(UpdateOpenIndexEvent.class)) {
+      onUndoUpdateOpenIndex((UpdateOpenIndexEvent) undoneEvent);
+    } else if (eventClass.equals(MoveOutEvent.class)) {
+      onUndoMoveOutSortedCards((MoveOutEvent) undoneEvent);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private void onUndoMove(MoveEvent undoneEvent) {
+    view.moveCards(
+        undoneEvent.newPosition.cardStackIndex,
+        undoneEvent.newPosition.cardIndex,
+        undoneEvent.oldPosition.cardStackIndex,
+        undoneEvent.oldPosition.cardIndex);
+  }
+
+  private void onUndoDraw(DrawCardsEvent undoneEvent) {
+    view.undoDrawCards(undoneEvent.drawnCards);
+    updateDrawingCardsView();
+  }
+
+  private void onUndoUpdateOpenIndex(UpdateOpenIndexEvent undoneEvent) {
+    view.updateOpenIndex(undoneEvent.cardStackIndex, undoneEvent.oldOpenIndex);
+  }
+
+  private void onUndoMoveOutSortedCards(MoveOutEvent undoneEvent) {
+    final Card[] movedCards = new Card[13];
+    for (int i = 0; i < 13; i++) {
+      movedCards[i] = game.getState().getCard(
+          CardPosition.of(undoneEvent.cardStackIndex, undoneEvent.cardIndex + i));
+    }
+    view.undoMoveOutSortedCards(undoneEvent.cardStackIndex, undoneEvent.cardIndex, movedCards);
+    updateSortedCardsView();
   }
 
   public SpiderSolitaire getGame() {
@@ -121,4 +180,11 @@ public class SpiderSolitairePresenter {
     game.draw();
   }
 
+  public boolean canUndo() {
+    return game.canUndo();
+  }
+
+  public boolean undo() {
+    return game.undo();
+  }
 }

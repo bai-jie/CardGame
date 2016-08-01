@@ -9,6 +9,7 @@ import android.support.percent.PercentLayoutHelper;
 import android.util.AttributeSet;
 import android.util.Pair;
 import android.view.DragEvent;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -144,9 +145,25 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   }
 
   @Override
+  public void undoDrawCards(Card[] drawnCards) {
+    forEachChild(cardStackListView, view -> {
+      ViewGroup cardStackView = (ViewGroup) view;
+      cardStackView.removeViewAt(cardStackView.getChildCount() - 1);
+    });
+  }
+
+  @Override
   public void moveOutSortedCards(int cardStackIndex, int cardIndex) {
     WidgetUtils.removeViews((ViewGroup) cardStackListView.getChildAt(cardStackIndex), cardIndex);
-    //TODO update SortedCardsView
+  }
+
+  @Override
+  public void undoMoveOutSortedCards(
+      int movedCardStackIndex, int movedCardIndex, Card[] movedCards) {
+    final ViewGroup cardStackView = (ViewGroup) cardStackListView.getChildAt(movedCardStackIndex);
+    for (Card card : movedCards) {
+      cardStackView.addView(newCardView(cardStackView.getContext(), card));
+    }
   }
 
   @Override
@@ -289,6 +306,45 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   }
 
   // ########## Event Bus End ##########
+
+  // ########## Undo Input ##########
+
+  //TODO recheck this method
+  //reference: http://android-developers.blogspot.in/2009/12/back-and-other-hard-keys-three-stories.html
+  @Override
+  public boolean dispatchKeyEvent(KeyEvent event) {
+    if (event.getKeyCode() != KeyEvent.KEYCODE_BACK) {
+      return super.dispatchKeyEvent(event);
+    }
+
+    if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+
+      // Tell the framework to start tracking this event.
+      getKeyDispatcherState().startTracking(event, this);
+      return true;
+
+    } else if (event.getAction() == KeyEvent.ACTION_UP) {
+      getKeyDispatcherState().handleUpEvent(event);
+      if (event.isTracking() && !event.isCanceled()) {
+
+        // DO BACK ACTION HERE
+        return onBackPressed();
+
+      }
+    }
+    return super.dispatchKeyEvent(event);
+  }
+
+  private boolean onBackPressed() {
+    if (presenter.canUndo()) {
+      presenter.undo();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // ########## Undo Input End ##########
 
   // ########## Drag and Drop ##########
 
