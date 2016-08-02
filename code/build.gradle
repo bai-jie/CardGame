@@ -38,6 +38,11 @@ project(androidProjects) {
     // for lambda support end
 }
 
+// see http://tools.android.com/tech-docs/new-build-system/tips#TOC-Improving-Build-Server-performance.
+project(androidProjects) {
+    android.dexOptions.preDexLibraries = !project.hasProperty('disablePreDex')
+}
+
 project(javaProjects + androidProjects) {
     group = 'gq.baijie.cardgame'
     version = '0.1.0'
