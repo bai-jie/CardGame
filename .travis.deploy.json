@@ -1,0 +1,44 @@
+{
+  "package": {
+    "name": "card-game",
+    "repo": "generic",
+    "subject": "baijie",
+    "desc": "Spider Solitaire",
+    "website_url": "https://github.com/Bai-Jie/CardGame",
+    "issue_tracker_url": "https://github.com/Bai-Jie/CardGame/issues",
+    "vcs_url": "https://github.com/Bai-Jie/CardGame",
+    "licenses": [
+      "Apache-2.0"
+    ],
+    "labels": [
+      "game", "android", "card", "spider", "solitaire"
+    ],
+    "public_download_numbers": true,
+    "public_stats": true
+  },
+
+  "version": {
+    "name": "nightly",
+    "desc": "auto build by Travis CI"
+  },
+
+  "files": [
+    {
+      "includePattern": "client/android/build/(.*)",
+      "excludePattern": "client/android/build/(generated|intermediates|tmp)/.*",
+      "uploadPattern": "gq/baijie/cardgame/android/nightly/build/$1",
+      "matrixParams": {
+        "override": 1
+      }
+    },
+    {
+      "includePattern": "client/android/build/outputs/apk/(.*)",
+      "uploadPattern": "gq/baijie/cardgame/android/nightly/apk/$1",
+      "matrixParams": {
+        "override": 1
+      }
+    }
+  ],
+
+  "publish": true
+}

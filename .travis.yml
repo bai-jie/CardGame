@@ -38,6 +38,17 @@ script:
     # see http://tools.android.com/tech-docs/new-build-system/tips#TOC-Improving-Build-Server-performance.
     - ./gradlew build -PdisablePreDex
 
+deploy:
+  provider: bintray
+  # because of "before_install: cd code"
+  file: "../.travis.deploy.json"
+  user: "baijie"
+  #key: "Bintray API key"
+  key:
+    secure: bskF/tRdTWV/2mE7zEpuTeghlNEmx9G3Sm4oNHfKaYBqJ0cokorLS5LY5DgadYFpT0kZj1QD7WjMGFFtudx0XIA6esEfD6PrQXYpV1hxhvDdE/ljH/2EBJ6Qc2FtdYdVOHEe7zI1JJQK732mAp4lxKVvWzbzpaXXUvAYAmks7lb/oe7yAg/SupSekhDxiiyFY6IeaMDXNS3U7LfzxF+np5YpLfo7WanvrF2ZCF3UV8qfp5JRwOLnuvnQWHU0ZBXn77wrctiL4J8lWK+EIxxlJtuUMUqBEZoU3+xg82qNJEBP/2FXDh/tv9ML5XKRuAj9zYEEM+qiOszjKMQq/hDmpU78lzltm1xHdNK0IEBsIzdrmLlK4sJtwfElXhR2nr3S9Uvh4zysEpf9nla2Abs0aWG+zVurClg3e5Sk2nDiXCMLeU+39QTljplux/+N1AhNREvBlgLp/GFPvjpwTYtUgIrRct0DVglVyfrakl54DR5ZB/3dAa1lirIl/DH68i1zK7owv8HHYYIrJ1+sBkx/gw3x5uw7gOEjy6BDTJgimuEid5Clq+BW9pKRcDEFKAmUODV2G2YpqmzGbd8/6WF5DNNbIINogly+yxPYPsZ2HdV1V+2OPF+kKJke+4RfdTB3UCK+bT0tu3LDm8tZm43WtfYdV6rAVqNadAeyuRxSY/A=
+  #passphrase: "Optional. In case a passphrase is configured on Bintray and GPG signing is used"
+  #dry-run: "Optional. If true, skips sending requests to Bintray. Useful for testing your configuration"
+
 # Caching
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
