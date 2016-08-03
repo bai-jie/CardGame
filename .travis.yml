@@ -38,6 +38,11 @@ script:
     # see http://tools.android.com/tech-docs/new-build-system/tips#TOC-Improving-Build-Server-performance.
     - ./gradlew build -PdisablePreDex
 
+after_success:
+  # code coverage
+  - ./gradlew jacocoTestReport
+  - bash <(curl -s https://codecov.io/bash)
+
 deploy:
   provider: bintray
   # because of "before_install: cd code"
