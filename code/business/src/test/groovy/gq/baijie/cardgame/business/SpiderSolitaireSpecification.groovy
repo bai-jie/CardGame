@@ -356,6 +356,72 @@ class SpiderSolitaireSpecification extends Specification {
         subscriber.onNextEvents[2] instanceof SpiderSolitaire.State.MoveEvent
     }
 
+    def "update index when MoveEvent and undo"() {
+        given: "stack: [(),(),(),(),((4,5,6),openIndex:2),(),(),(7),(),()], cardsForDrawing: [], sortedCards: []"
+        final def game = newEmptyGame()
+        game.state.cardStacks[4].cards.addAll([4, 5, 6].collect { newCard it })
+        game.state.cardStacks[4].openIndex = 2
+        game.state.cardStacks[7].cards.add(newCard(7))
+        game.state.cardStacks[7].openIndex = 0 // 0 is default value
+        // event logger
+        def subscriber = TestSubscriber.create()
+        game.state.eventBus.subscribe(subscriber)
+
+        when: "move (4, 2) to (7, 1)"
+        game.move(CardPosition.of(4, 2), CardPosition.of(7, 1))
+        then:
+        // -state stack: [(),(),(),(),((4, 5),openIndex change to 1),(),(),(7,6),(),()]
+        game.state.cardStacks[4].cards.collect { it.rank.id } == [4, 5]
+        game.state.cardStacks[4].openIndex == 1
+        game.state.cardStacks[7].cards.collect { it.rank.id } == [7, 6]
+        game.state.cardStacks[7].openIndex == 0
+        // -event [MoveEvent, UpdateOpenIndexEvent]
+        subscriber.assertNotCompleted()
+        subscriber.valueCount == 2
+        with(subscriber.onNextEvents[0]) {
+            delegate instanceof SpiderSolitaire.State.MoveEvent
+            oldPosition.cardStackIndex == 4
+            oldPosition.cardIndex == 2
+            newPosition.cardStackIndex == 7
+            newPosition.cardIndex == 1
+        }
+        with(subscriber.onNextEvents[1]) {
+            delegate instanceof SpiderSolitaire.State.UpdateOpenIndexEvent
+            cardStackIndex == 4
+            oldOpenIndex == 2
+            newOpenIndex == 1
+        }
+
+        when: "undo"
+        game.undo()
+        then:
+        // -state: (same to the given block's state)
+        game.state.cardStacks[4].cards.collect { it.rank.id } == [4, 5, 6]
+        game.state.cardStacks[4].openIndex == 2
+        game.state.cardStacks[7].cards.collect { it.rank.id } == [7]
+        game.state.cardStacks[7].openIndex == 0
+        // -event: [MoveEvent, UpdateOpenIndexEvent, UndoEvent(UpdateOpenIndexEvent), UndoEvent(MoveEvent)]
+        subscriber.assertNotCompleted()
+        subscriber.valueCount == 4
+        subscriber.onNextEvents[0] instanceof SpiderSolitaire.State.MoveEvent
+        subscriber.onNextEvents[1] instanceof SpiderSolitaire.State.UpdateOpenIndexEvent
+        with(subscriber.onNextEvents[2]) {
+            delegate instanceof SpiderSolitaire.State.UndoEvent
+            undoneEvent instanceof SpiderSolitaire.State.UpdateOpenIndexEvent
+            undoneEvent.cardStackIndex == 4
+            undoneEvent.oldOpenIndex == 2
+            undoneEvent.newOpenIndex == 1
+        }
+        with(subscriber.onNextEvents[3]) {
+            delegate instanceof SpiderSolitaire.State.UndoEvent
+            undoneEvent instanceof SpiderSolitaire.State.MoveEvent
+            undoneEvent.oldPosition.cardStackIndex == 4
+            undoneEvent.oldPosition.cardIndex == 2
+            undoneEvent.newPosition.cardStackIndex == 7
+            undoneEvent.newPosition.cardIndex == 1
+        }
+    }
+
     def "update index when MoveOutEvent and undo"() {
         given: "stack: [(1),(2),(3),(4),(5),(6),(7),(8),(9),((5,5,13..2),openIndex:2)], cardsForDrawing: [1,2,3,4,5,6,7,8,9,10], sortedCards: []"
         def game = newEmptyGame()
@@ -481,46 +547,6 @@ class SpiderSolitaireSpecification extends Specification {
         // -event []
         subscriber.assertNotCompleted()
         subscriber.valueCount == 0
-    }
-
-    def "undo move command"() {
-        given: "stack: [(),(),(),(),((4,5,6),openIndex:1),(),(),(7),(),()], cardsForDrawing: [], sortedCards: []"
-        final def game = newEmptyGame()
-        game.state.cardStacks[4].cards.addAll([4, 5, 6].collect { newCard it })
-        game.state.cardStacks[4].openIndex = 1
-        game.state.cardStacks[7].cards.add(newCard(7))
-        game.state.cardStacks[7].openIndex = 0 // 0 is default value
-        // event logger
-        def subscriber = TestSubscriber.create()
-        game.state.eventBus.subscribe(subscriber)
-
-        when: "move (4, 2) to (7, 1)"
-        game.move(CardPosition.of(4, 1), CardPosition.of(7, 1))
-        then:
-        // -state stack: [(),(),(),(),((5),openIndex change to 0),(),(),(7,6),(),()]
-        game.state.cardStacks[4].cards.collect { it.rank.id } == [5]
-        game.state.cardStacks[4].openIndex == 0
-        // -event [MoveEvent, UpdateOpenIndexEvent]
-        subscriber.assertNotCompleted()
-        subscriber.valueCount == 2
-        subscriber.onNextEvents[0] instanceof SpiderSolitaire.State.MoveEvent
-        with(subscriber.onNextEvents[1]) {
-            delegate instanceof SpiderSolitaire.State.UpdateOpenIndexEvent
-            cardStackIndex == 4
-            oldOpenIndex == 1
-            newOpenIndex == 0
-        }
-
-        when: "move (4, 0) to (7, 2)"
-        game.move(CardPosition.of(4, 0), CardPosition.of(7, 2))
-        then:
-        // -state stack: [(),(),(),(),((),openIndex keep 0),(),(),(7,6,5),(),()]
-        game.state.cardStacks[4].cards.isEmpty()
-        game.state.cardStacks[4].openIndex == 0
-        // -event old events + [MoveEvent]
-        subscriber.assertNotCompleted()
-        subscriber.valueCount == 3
-        subscriber.onNextEvents[2] instanceof SpiderSolitaire.State.MoveEvent
     }
 
 }
