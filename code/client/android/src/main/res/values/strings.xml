@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CardGame</string>
+    <string name="app_name">Spider</string>
     <string name="crash_dialog_text">
         An unexpected error occurred forcing the application to stop.
         Please help us fix this by sending us error data,
