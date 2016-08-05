@@ -47,6 +47,7 @@ public class AndroidDrawingCardsView extends TextView implements DrawingCardsVie
   @Override
   public void setDecks(int decks) {
     setText(String.valueOf(decks));
+    setVisibility(decks > 0 ? VISIBLE : INVISIBLE);
   }
 
   @Override
