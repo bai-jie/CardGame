@@ -1,10 +1,11 @@
 package gq.baijie.cardgame.client.android.ui.view;
 
 import android.content.Context;
+import android.support.annotation.DrawableRes;
 import android.support.percent.PercentFrameLayout;
 import android.support.percent.PercentLayoutHelper;
+import android.support.v7.widget.AppCompatImageView;
 import android.view.Gravity;
-import android.widget.TextView;
 
 import gq.baijie.cardgame.client.android.R;
 import gq.baijie.cardgame.domain.entity.Card;
@@ -12,7 +13,7 @@ import gq.baijie.cardgame.domain.entity.Card;
 
 public class AndroidCardView extends PercentFrameLayout {
 
-  private final TextView contentView;
+  private final AppCompatImageView contentView;
 
   private final Card card;
 
@@ -20,7 +21,7 @@ public class AndroidCardView extends PercentFrameLayout {
 
   public AndroidCardView(Context context, Card card, boolean open) {
     super(context);
-    contentView = new TextView(context);
+    contentView = new AppCompatImageView(context);
     this.card = card;
     this.open = open;
     init();
@@ -57,49 +58,23 @@ public class AndroidCardView extends PercentFrameLayout {
 
   private void updateContentView() {
     if (open) {
-      contentView.setText(toString(card));
+      contentView.setImageResource(toDrawableRes(card));
     } else {
-      contentView.setText("");
+      contentView.setImageDrawable(null);
     }
   }
 
-  private static String toString(Card card) {
-    String result;
-    switch (card.getSuit()) {
-      case CLUB:
-        result = "♣";
-        break;
-      case DIAMOND:
-        result = "♦";
-        break;
-      case HEART:
-        result = "♥";
-        break;
-      case SPADE:
-        result = "♠";
-        break;
-      default:
-        result = "";
-        break;
-    }
-    switch (card.getRank()) {
-      case ACE:
-        result += "A";
-        break;
-      case JACK:
-        result += "J";
-        break;
-      case QUEEN:
-        result += "Q";
-        break;
-      case KING:
-        result += "K";
-        break;
-      default:
-        result += card.getRank().getId();
-        break;
-    }
-    return result;
+  @DrawableRes
+  private int toDrawableRes(Card card) {
+    return getResources()
+        .getIdentifier(toDrawableResName(card), "drawable", getContext().getPackageName());
+  }
+
+  /**
+   * <string>Note</string>: not support Joker cards
+   */
+  private static String toDrawableResName(Card card) {
+    return "card_" + card.getSuit().name().toLowerCase() + "_" + card.getRank().getId();
   }
 
 }
