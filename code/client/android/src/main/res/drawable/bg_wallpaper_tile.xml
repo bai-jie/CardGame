@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/bg_wallpaper_background"/>
+    <item android:drawable="@drawable/bg_wallpaper_dot"
+          android:top="0dp" android:left="0dp"
+          android:bottom="@dimen/wallpaper_dot_size" android:right="@dimen/wallpaper_dot_size"/>
+    <item android:drawable="@drawable/bg_wallpaper_dot"
+          android:top="@dimen/wallpaper_dot_size" android:left="@dimen/wallpaper_dot_size"
+          android:bottom="0dp" android:right="0dp"/>
+</layer-list>

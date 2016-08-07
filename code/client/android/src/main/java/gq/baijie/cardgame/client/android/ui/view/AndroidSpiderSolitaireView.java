@@ -2,8 +2,14 @@ package gq.baijie.cardgame.client.android.ui.view;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Pair;
 import android.view.DragEvent;
@@ -67,6 +73,7 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   @Override
   public void init(SpiderSolitairePresenter presenter) {
+    setBackground(getWallpaperBackground());
     this.presenter = presenter;
     setSelectListener();
     setDragListener();
@@ -178,6 +185,42 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   }
 
   // ########## For init, drawCards ##########
+
+  private Drawable getWallpaperBackground() {
+    Bitmap wallpaperTile = getWallpaperTile();
+    BitmapDrawable result = new BitmapDrawable(getResources(), wallpaperTile);
+    result.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+    return result;
+  }
+
+  @Nullable
+  private Bitmap getWallpaperTile() {
+    return drawableToBitmap(getResources().getDrawable(R.drawable.bg_wallpaper_tile));
+  }
+
+  // copy from http://stackoverflow.com/a/10600736/5015207
+  private static Bitmap drawableToBitmap(Drawable drawable) {
+    Bitmap bitmap;
+
+    if (drawable instanceof BitmapDrawable) {
+      BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+      if(bitmapDrawable.getBitmap() != null) {
+        return bitmapDrawable.getBitmap();
+      }
+    }
+
+    if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+      bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+    } else {
+      bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+    }
+
+    Canvas canvas = new Canvas(bitmap);
+    drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+    drawable.draw(canvas);
+    return bitmap;
+  }
+
   private void show(SpiderSolitaire.State state) {
     removeAllViews();//TODO do this?
     // * add CardStackListView

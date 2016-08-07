@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="wallpaper_tile_size">4px</dimen>
+    <dimen name="wallpaper_dot_size">2px</dimen>
+</resources>

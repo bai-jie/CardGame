@@ -9,4 +9,7 @@
     <dimen name="default_card_width">50dp</dimen>
     <dimen name="default_card_height">70dp</dimen>
     <dimen name="default_card_margin">8dp</dimen>
+
+    <dimen name="wallpaper_tile_size">2dp</dimen>
+    <dimen name="wallpaper_dot_size">1dp</dimen>
 </resources>
