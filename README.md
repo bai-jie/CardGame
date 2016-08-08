@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/Bai-Jie/CardGame.svg?branch=master)](https://travis-ci.org/Bai-Jie/CardGame)
 [![codecov](https://codecov.io/gh/Bai-Jie/CardGame/branch/master/graph/badge.svg)](https://codecov.io/gh/Bai-Jie/CardGame)
+[![codebeat badge](https://codebeat.co/badges/e4e26405-0638-4ee2-8067-b58a65d23e75)](https://codebeat.co/projects/github-com-bai-jie-cardgame)
 [![Bintray](https://img.shields.io/bintray/v/baijie/generic/card-game.svg?maxAge=2592000)](https://bintray.com/baijie/generic/card-game)
 
 # 蜘蛛纸牌
