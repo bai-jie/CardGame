@@ -6,6 +6,8 @@
     <dimen name="default_card_stack_layout_delta">16dp</dimen>
     <dimen name="focused_card_delta">32dp</dimen>
 
+    <dimen name="piled_cards_delta">2dp</dimen>
+
     <dimen name="default_card_width">50dp</dimen>
     <dimen name="default_card_height">70dp</dimen>
     <dimen name="default_card_margin">8dp</dimen>
