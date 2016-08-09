@@ -124,9 +124,7 @@ public class SpiderSolitairePresenter {
       onUndoUpdateOpenIndex((UpdateOpenIndexEvent) undoneEvent);
     } else if (eventClass.equals(MoveOutEvent.class)) {
       onUndoMoveOutSortedCards((MoveOutEvent) undoneEvent);
-    } else {
-      throw new UnsupportedOperationException();
-    }
+    } // else for other undoneEvents, do nothing
   }
 
   private void onUndoMove(MoveEvent undoneEvent) {

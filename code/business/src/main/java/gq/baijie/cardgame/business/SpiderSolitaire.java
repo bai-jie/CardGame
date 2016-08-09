@@ -279,11 +279,7 @@ public class SpiderSolitaire {
       undoUpdateOpenIndex((State.UpdateOpenIndexEvent) undoneEvent);
     } else if (eventClass.equals(State.MoveOutEvent.class)) {
       undoSortedOut((State.MoveOutEvent) undoneEvent);
-    } else if (eventClass.equals(State.GameCompleteEvent.class)) {
-      //do nothing
-    } else {
-      throw new UnsupportedOperationException();
-    }
+    } // else for other undoneEvents, do nothing
   }
 
   private static boolean isPlayerEvent(Object event) {
