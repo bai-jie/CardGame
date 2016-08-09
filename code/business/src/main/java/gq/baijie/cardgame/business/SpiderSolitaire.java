@@ -62,6 +62,14 @@ public class SpiderSolitaire {
             updateIndexIfNeed(moveOutEvent.cardStackIndex);
           }
         });
+    // * checkIsGameComplete when MoveOutEvent
+    state.getEventBus().ofType(State.MoveOutEvent.class).subscribe(
+        new Action1<State.MoveOutEvent>() {
+          @Override
+          public void call(State.MoveOutEvent event) {
+            checkIsGameComplete();
+          }
+        });
     // * record events to support undo operation
     state.getEventBus().subscribe(new Action1<Object>() {
       @Override
@@ -148,6 +156,12 @@ public class SpiderSolitaire {
 
   private void undoUpdateOpenIndex(State.UpdateOpenIndexEvent undoneEvent) {
     state.cardStacks.get(undoneEvent.cardStackIndex).openIndex = undoneEvent.oldOpenIndex;
+  }
+
+  private void checkIsGameComplete() {
+    if (getState().sortedCards.size() == 8) {
+      state.nextEvent(new State.GameCompleteEvent());
+    }
   }
 
   public State getState() {
@@ -265,6 +279,8 @@ public class SpiderSolitaire {
       undoUpdateOpenIndex((State.UpdateOpenIndexEvent) undoneEvent);
     } else if (eventClass.equals(State.MoveOutEvent.class)) {
       undoSortedOut((State.MoveOutEvent) undoneEvent);
+    } else if (eventClass.equals(State.GameCompleteEvent.class)) {
+      //do nothing
     } else {
       throw new UnsupportedOperationException();
     }
@@ -434,6 +450,8 @@ public class SpiderSolitaire {
         this.newOpenIndex = newOpenIndex;
       }
     }
+
+    public static class GameCompleteEvent {}
 
     public static class UndoEvent {
       public final Object undoneEvent;

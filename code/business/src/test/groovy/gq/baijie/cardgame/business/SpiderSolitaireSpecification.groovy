@@ -528,6 +528,58 @@ class SpiderSolitaireSpecification extends Specification {
         }
     }
 
+    def "game complete and undo"() {
+        given: "stack: [(),(),(),(),(),(13..5),(),(4..1),(),()], cardsForDrawing: [], sortedCards: [[13..1]*7]"
+        final def game = newEmptyGame()
+        game.state.cardStacks[5].cards.addAll((13..5).collect { newCard it })
+        game.state.cardStacks[7].cards.addAll((4..1).collect { newCard it })
+        7.times { game.state.sortedCards << (13..1).collect { newCard it } }
+        // event logger
+        def subscriber = TestSubscriber.create()
+        game.state.eventBus.subscribe(subscriber)
+
+        when: "move (7, 0) to (5, 8)"
+        game.move(CardPosition.of(7, 0), CardPosition.of(5, 8))
+
+        then:
+        // -state stack: [(empty)*10], cardsForDrawing: [], sortedCards: [[13..1]*8]
+        game.state.cardStacks.every { it.cards.isEmpty() }
+        game.state.cardsForDrawing.isEmpty()
+        game.state.sortedCards.size() == 8
+        game.state.sortedCards.every { it.collect { it.rank.id }.containsAll((1..13)) }
+        // -event [MoveEvent, MoveOutEvent, GameCompleteEvent]
+        subscriber.assertNotCompleted()
+        subscriber.valueCount == 3
+        subscriber.onNextEvents[0] instanceof SpiderSolitaire.State.MoveEvent
+        subscriber.onNextEvents[1] instanceof SpiderSolitaire.State.MoveOutEvent
+        subscriber.onNextEvents[2] instanceof SpiderSolitaire.State.GameCompleteEvent
+
+        when:
+        game.undo()
+
+        then:
+        // -state same to given block's state
+        (game.state.cardStacks - game.state.cardStacks[5] - game.state.cardStacks[7])
+                .every { it.cards.isEmpty() }
+        game.state.cardStacks[5].cards.collect {it.rank.id} == (13..5)
+        game.state.cardStacks[7].cards.collect {it.rank.id} == (4..1)
+        game.state.cardsForDrawing.isEmpty()
+        game.state.sortedCards.size() == 7
+        game.state.sortedCards.every { it.collect { it.rank.id }.containsAll((1..13)) }
+        // -event [MoveEvent, MoveOutEvent, GameCompleteEvent, UndoEvent(GameCompleteEvent), UndoEvent(MoveOutEvent), UndoEvent(MoveEvent)]
+        subscriber.assertNotCompleted()
+        subscriber.valueCount == 6
+        subscriber.onNextEvents[0] instanceof SpiderSolitaire.State.MoveEvent
+        subscriber.onNextEvents[1] instanceof SpiderSolitaire.State.MoveOutEvent
+        subscriber.onNextEvents[2] instanceof SpiderSolitaire.State.GameCompleteEvent
+        subscriber.onNextEvents[3] instanceof SpiderSolitaire.State.UndoEvent
+        subscriber.onNextEvents[3].undoneEvent instanceof SpiderSolitaire.State.GameCompleteEvent
+        subscriber.onNextEvents[4] instanceof SpiderSolitaire.State.UndoEvent
+        subscriber.onNextEvents[4].undoneEvent instanceof SpiderSolitaire.State.MoveOutEvent
+        subscriber.onNextEvents[5] instanceof SpiderSolitaire.State.UndoEvent
+        subscriber.onNextEvents[5].undoneEvent instanceof SpiderSolitaire.State.MoveEvent
+    }
+
     def "cannot undo when just start game"() {
         given:
         final def game = newEmptyGame()
