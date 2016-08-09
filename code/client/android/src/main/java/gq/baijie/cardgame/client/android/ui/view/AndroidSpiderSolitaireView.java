@@ -308,6 +308,12 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   // ########## Undo Input ##########
 
+  {
+    // set Focusable to receive KeyEvent
+    setFocusable(true);
+    setFocusableInTouchMode(true);
+  }
+
   //TODO recheck this method
   //reference: http://android-developers.blogspot.in/2009/12/back-and-other-hard-keys-three-stories.html
   @Override
