@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">蜘蛛纸牌</string>
     <string name="crash_dialog_text">一个意外错误导致了程序退出。如果可以的话，请允许发送错误数据给开发者。</string>
+
+    <string name="game_complete_dialog_title">祝贺</string>
+    <string name="game_complete_dialog_message">你赢了！</string>
 </resources>

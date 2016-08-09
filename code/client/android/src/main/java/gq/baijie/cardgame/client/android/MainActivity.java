@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 
 import gq.baijie.cardgame.business.SpiderSolitaires;
 import gq.baijie.cardgame.client.android.ui.view.AndroidDrawingCardsView;
+import gq.baijie.cardgame.client.android.ui.view.AndroidGameCompleteView;
 import gq.baijie.cardgame.client.android.ui.view.AndroidSortedCardsView;
 import gq.baijie.cardgame.client.android.ui.view.AndroidSpiderSolitaireView;
 import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
@@ -24,7 +25,8 @@ public class MainActivity extends AppCompatActivity {
         SpiderSolitaires.newGame(),
         spiderSolitaireView,
         new AndroidDrawingCardsView(this),
-        new AndroidSortedCardsView(this)
+        new AndroidSortedCardsView(this),
+        new AndroidGameCompleteView(this)
     );
   }
 

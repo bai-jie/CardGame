@@ -7,8 +7,10 @@ import gq.baijie.cardgame.business.SpiderSolitaire.State.MoveEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.MoveOutEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.UndoEvent;
 import gq.baijie.cardgame.business.SpiderSolitaire.State.UpdateOpenIndexEvent;
+import gq.baijie.cardgame.business.SpiderSolitaire.State.GameCompleteEvent;
 import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.view.DrawingCardsView;
+import gq.baijie.cardgame.facade.view.GameCompleteView;
 import gq.baijie.cardgame.facade.view.SortedCardsView;
 import gq.baijie.cardgame.facade.view.SpiderSolitaireView;
 import rx.Observable;
@@ -24,16 +26,20 @@ public class SpiderSolitairePresenter {
 
   private final SortedCardsView sortedCardsView;
 
+  private final GameCompleteView gameCompleteView;
+
   public SpiderSolitairePresenter(
       SpiderSolitaire game,
       SpiderSolitaireView view,
       DrawingCardsView drawingCardsView,
-      SortedCardsView sortedCardsView
+      SortedCardsView sortedCardsView,
+      GameCompleteView gameCompleteView
   ) {
     this.game = game;
     this.view = view;
     this.drawingCardsView = drawingCardsView;
     this.sortedCardsView = sortedCardsView;
+    this.gameCompleteView = gameCompleteView;
     init();
   }
 
@@ -75,6 +81,12 @@ public class SpiderSolitairePresenter {
       @Override
       public void call(UpdateOpenIndexEvent event) {
         view.updateOpenIndex(event.cardStackIndex, event.oldOpenIndex, event.newOpenIndex);
+      }
+    });
+    eventBus.ofType(GameCompleteEvent.class).subscribe(new Action1<GameCompleteEvent>() {
+      @Override
+      public void call(GameCompleteEvent gameCompleteEvent) {
+        gameCompleteView.show();
       }
     });
     eventBus.ofType(UndoEvent.class).subscribe(new Action1<UndoEvent>() {

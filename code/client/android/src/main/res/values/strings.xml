@@ -5,4 +5,7 @@
         Please help us fix this by sending us error data,
         all you have to do is click OK.
     </string>
+
+    <string name="game_complete_dialog_title">Congratulation</string>
+    <string name="game_complete_dialog_message">You win!</string>
 </resources>
