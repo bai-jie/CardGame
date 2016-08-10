@@ -10,6 +10,8 @@ import gq.baijie.cardgame.facade.view.DrawingCardsView;
 import gq.baijie.cardgame.facade.view.ViewHelper;
 import rx.Observable;
 
+import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.withNumberOfChildren;
+
 public class AndroidDrawingCardsView extends CardStackLayout implements DrawingCardsView {
 
   private final ViewHelper viewHelper = new ViewHelper();
@@ -37,17 +39,11 @@ public class AndroidDrawingCardsView extends CardStackLayout implements DrawingC
   @Override
   public void setDecks(int decks) {
     setVisibility(decks > 0 ? VISIBLE : INVISIBLE);
-    // * let getChildCount() == decks
-    if (getChildCount() < decks) {
-      // add cards
-      while (getChildCount() < decks) {
-        addView(new AndroidCardView(
-            getContext(), new Card(Card.Suit.HEART, Card.Rank.KING), false));
-      }
-    } else if (getChildCount() > decks) {
-      // remove cards
-      removeViews(decks, getChildCount() - decks);
-    } // else getChildCount() == decks, do nothing
+    withNumberOfChildren(
+        this,
+        decks,
+        () -> new AndroidCardView(getContext(), new Card(Card.Suit.HEART, Card.Rank.KING), false)
+    );
   }
 
   @Override

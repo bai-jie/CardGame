@@ -5,6 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import rx.functions.Action1;
+import rx.functions.Func0;
 
 public class WidgetUtils {
 
@@ -25,6 +26,26 @@ public class WidgetUtils {
     while(from.getChildCount() > startPos) {
       from.removeViewAt(startPos);
     }
+  }
+
+  /**
+   * let target have specific number of children
+   *
+   * @param target       the handled parent view
+   * @param number       the number of children after this call
+   * @param childFactory use if {@code target.getChildCount() < number}
+   */
+  public static void withNumberOfChildren(
+      @NonNull final ViewGroup target, final int number, final Func0<View> childFactory) {
+    if (target.getChildCount() < number) {
+      // add cards
+      while (target.getChildCount() < number) {
+        target.addView(childFactory.call());
+      }
+    } else if (target.getChildCount() > number) {
+      // remove cards
+      removeViews(target, number);
+    } // else getChildCount() == number, do nothing
   }
 
   public static void forEachChild(

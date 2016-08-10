@@ -9,6 +9,8 @@ import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.view.SortedCardsView;
 import rx.Observable;
 
+import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.withNumberOfChildren;
+
 public class AndroidSortedCardsView extends CardStackLayout implements SortedCardsView {
 
   public AndroidSortedCardsView(Context context) {
@@ -33,16 +35,11 @@ public class AndroidSortedCardsView extends CardStackLayout implements SortedCar
   @Override
   public void setDecks(int decks) {
     setVisibility(decks > 0 ? VISIBLE : INVISIBLE);
-    // * let getChildCount() == decks
-    if (getChildCount() < decks) {
-      // add cards
-      while (getChildCount() < decks) {
-        addView(new AndroidCardView(getContext(), new Card(Card.Suit.HEART, Card.Rank.ACE), true));
-      }
-    } else if (getChildCount() > decks) {
-      // remove cards
-      removeViews(decks, getChildCount() - decks);
-    } // else getChildCount() == decks, do nothing
+    withNumberOfChildren(
+        this,
+        decks,
+        () -> new AndroidCardView(getContext(), new Card(Card.Suit.HEART, Card.Rank.ACE), true)
+    );
   }
 
   @Override
