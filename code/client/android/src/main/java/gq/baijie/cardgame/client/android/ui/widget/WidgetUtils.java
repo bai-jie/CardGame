@@ -23,9 +23,7 @@ public class WidgetUtils {
   }
 
   public static void removeViews(@NonNull final ViewGroup from, final int startPos) {
-    while(from.getChildCount() > startPos) {
-      from.removeViewAt(startPos);
-    }
+    from.removeViews(startPos, from.getChildCount() - startPos);
   }
 
   /**
