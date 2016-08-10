@@ -5,8 +5,6 @@ import android.support.v7.app.AlertDialog;
 
 import gq.baijie.cardgame.client.android.R;
 import gq.baijie.cardgame.facade.view.GameCompleteView;
-import rx.Observable;
-
 
 public class AndroidGameCompleteView implements GameCompleteView {
 
@@ -22,11 +20,6 @@ public class AndroidGameCompleteView implements GameCompleteView {
         .setTitle(R.string.game_complete_dialog_title)
         .setMessage(R.string.game_complete_dialog_message)
         .show();
-  }
-
-  @Override
-  public Observable<Event> getEventBus() {
-    throw new UnsupportedOperationException();
   }
 
 }

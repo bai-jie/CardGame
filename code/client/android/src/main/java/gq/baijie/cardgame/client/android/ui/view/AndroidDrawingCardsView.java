@@ -7,14 +7,14 @@ import gq.baijie.cardgame.client.android.R;
 import gq.baijie.cardgame.client.android.ui.widget.CardStackLayout;
 import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.view.DrawingCardsView;
-import gq.baijie.cardgame.facade.view.ViewHelper;
+import gq.baijie.cardgame.facade.view.EventBusHelper;
 import rx.Observable;
 
 import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.withNumberOfChildren;
 
 public class AndroidDrawingCardsView extends CardStackLayout implements DrawingCardsView {
 
-  private final ViewHelper viewHelper = new ViewHelper();
+  private final EventBusHelper<DrawEvent> eventBusHelper = EventBusHelper.create();
 
   public AndroidDrawingCardsView(Context context) {
     super(context);
@@ -33,7 +33,7 @@ public class AndroidDrawingCardsView extends CardStackLayout implements DrawingC
 
   private void init() {
     setDelta(getResources().getDimensionPixelSize(R.dimen.piled_cards_delta));
-    super.setOnClickListener(v -> viewHelper.nextEvent(new DrawEvent(this)));
+    super.setOnClickListener(v -> eventBusHelper.nextEvent(new DrawEvent(this)));
   }
 
   @Override
@@ -47,8 +47,8 @@ public class AndroidDrawingCardsView extends CardStackLayout implements DrawingC
   }
 
   @Override
-  public Observable<Event> getEventBus() {
-    return viewHelper.getEventBus();
+  public Observable<DrawEvent> getEventBus() {
+    return eventBusHelper.getEventBus();
   }
 
   @Override

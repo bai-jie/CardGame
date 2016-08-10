@@ -96,7 +96,7 @@ public class SpiderSolitairePresenter {
       }
     });
     // bind events from drawingCardsView
-    drawingCardsView.getEventBus().ofType(DrawingCardsView.DrawEvent.class).subscribe(
+    drawingCardsView.getEventBus().subscribe(
         new Action1<DrawingCardsView.DrawEvent>() {
           @Override
           public void call(DrawingCardsView.DrawEvent drawEvent) {

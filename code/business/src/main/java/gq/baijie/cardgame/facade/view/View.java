@@ -1,12 +1,8 @@
 package gq.baijie.cardgame.facade.view;
 
-import rx.Observable;
-
 public interface View {
 
-  Observable<Event> getEventBus();
-
-  class Event {
+  class Event extends gq.baijie.cardgame.facade.view.Event {
     final View origin;
 
     public Event(View origin) {

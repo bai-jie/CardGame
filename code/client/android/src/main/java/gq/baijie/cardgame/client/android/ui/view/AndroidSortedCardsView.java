@@ -7,7 +7,6 @@ import gq.baijie.cardgame.client.android.R;
 import gq.baijie.cardgame.client.android.ui.widget.CardStackLayout;
 import gq.baijie.cardgame.domain.entity.Card;
 import gq.baijie.cardgame.facade.view.SortedCardsView;
-import rx.Observable;
 
 import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.withNumberOfChildren;
 
@@ -40,11 +39,6 @@ public class AndroidSortedCardsView extends CardStackLayout implements SortedCar
         decks,
         () -> new AndroidCardView(getContext(), new Card(Card.Suit.HEART, Card.Rank.ACE), true)
     );
-  }
-
-  @Override
-  public Observable<Event> getEventBus() {
-    throw new UnsupportedOperationException();
   }
 
 }
