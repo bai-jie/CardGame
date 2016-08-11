@@ -14,4 +14,6 @@
 
     <dimen name="wallpaper_tile_size">2dp</dimen>
     <dimen name="wallpaper_dot_size">1dp</dimen>
+
+    <dimen name="card_stack_list_margin_half">4dp</dimen>
 </resources>

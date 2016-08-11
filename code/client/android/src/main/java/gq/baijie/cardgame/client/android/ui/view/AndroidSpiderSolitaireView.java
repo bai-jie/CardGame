@@ -247,6 +247,8 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   private View newCardStackView(Context context, SpiderSolitaire.State.CardStack cardStack) {
     CardStackLayout result = new CardStackLayout(context);
+    int half_margin = getResources().getDimensionPixelSize(R.dimen.card_stack_list_margin_half);
+    result.setPadding(half_margin, 0, half_margin, 0);
     for (int i = 0; i < cardStack.cards.size(); i++) {
       View cardView = newCardView(context, cardStack.cards.get(i), i >= cardStack.getOpenIndex());
       result.addView(cardView, MATCH_PARENT, WRAP_CONTENT);

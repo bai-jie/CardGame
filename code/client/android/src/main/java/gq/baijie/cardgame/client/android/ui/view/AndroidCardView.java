@@ -37,7 +37,7 @@ public class AndroidCardView extends PercentFrameLayout {
     final PercentLayoutHelper.PercentLayoutInfo layoutInfo = layoutParams.getPercentLayoutInfo();
     // https://en.wikipedia.org/wiki/Standard_52-card_deck
     layoutInfo.aspectRatio = 0.71428571428571428571428571428571f;// 2.5 / 3.5
-    layoutInfo.widthPercent = 0.9f;
+    layoutInfo.widthPercent = 1f;
   }
 
   public Card getCard() {
