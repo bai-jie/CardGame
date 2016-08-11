@@ -219,15 +219,18 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
   }
 
   private AnimatorSet drawCardsAnimator(View[] cardViews) {
-    Animator[] translationAnimators = new Animator[10];
     assert cardViews.length == 10;
     assert cardStackListView.getChildCount() == 10;
+    Animator[] translationAnimators = new Animator[10];
     for (int i = 0; i < 10; i++) {
       translationAnimators[i] =
           drawCardsAnimator(cardViews[i], (CardStackLayout) cardStackListView.getChildAt(i));
     }
     AnimatorSet animatorSet = new AnimatorSet();
-    animatorSet.playSequentially(translationAnimators);
+    final int delay = getResources().getInteger(android.R.integer.config_shortAnimTime) / 10;
+    for (int i = 0; i < 10; i++) {
+      animatorSet.play(translationAnimators[i]).after(delay * i);
+    }
     return animatorSet;
   }
 
