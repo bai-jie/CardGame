@@ -90,6 +90,8 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     }
     AndroidDrawingCardsView drawingCardsView = (AndroidDrawingCardsView) view;
     drawingCardsView.setId(R.id.drawing_card);
+    setClipChildren(false);
+    drawingCardsView.setClipChildren(false);
     LayoutParams layoutParams = new LayoutParams(
         getResources().getDimensionPixelSize(R.dimen.default_card_width),
         getResources().getDimensionPixelSize(R.dimen.default_card_height));
@@ -113,6 +115,8 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       throw new UnsupportedOperationException();
     }
     AndroidSortedCardsView sortedCardsView = (AndroidSortedCardsView) view;
+    setClipChildren(false);
+    sortedCardsView.setClipChildren(false);
     LayoutParams layoutParams = new LayoutParams(
         getResources().getDimensionPixelSize(R.dimen.default_card_width),
         getResources().getDimensionPixelSize(R.dimen.default_card_height));
