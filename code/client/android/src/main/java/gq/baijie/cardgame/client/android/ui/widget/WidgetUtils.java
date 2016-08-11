@@ -9,6 +9,14 @@ import rx.functions.Func0;
 
 public class WidgetUtils {
 
+  public static View getLastChild(@NonNull final ViewGroup parent) {
+    if (parent.getChildCount() > 0) {
+      return parent.getChildAt(parent.getChildCount() - 1);
+    } else {
+      return null;
+    }
+  }
+
   public static void moveChildViews(@NonNull final ViewGroup from, @NonNull final ViewGroup to) {
     moveChildViews(from, 0, to);
   }

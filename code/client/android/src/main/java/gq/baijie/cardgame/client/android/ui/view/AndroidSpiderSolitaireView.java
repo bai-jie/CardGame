@@ -1,9 +1,14 @@
 package gq.baijie.cardgame.client.android.ui.view;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -17,6 +22,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
@@ -41,6 +47,7 @@ import rx.subjects.Subject;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.forEachChild;
+import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.getLastChild;
 import static gq.baijie.cardgame.client.android.ui.widget.WidgetUtils.moveChildViews;
 
 public class AndroidSpiderSolitaireView extends RelativeLayout implements SpiderSolitaireView {
@@ -147,9 +154,121 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   @Override
   public void drawCards(Card[] cards) {
+    if (drawingCardsView != null && drawingCardsView instanceof AndroidDrawingCardsView) {
+      drawCardsWhenHaveDrawingCardsView(cards, (AndroidDrawingCardsView) drawingCardsView);
+    } else {
+      drawCardsWhenHaventDrawingCardsView(cards);
+    }
+  }
+
+  private void drawCardsWhenHaventDrawingCardsView(Card[] cards) {
     for (int i = 0; i < cards.length; i++) {
       ((ViewGroup) cardStackListView.getChildAt(i)).addView(newCardView(getContext(), cards[i], true));
     }
+  }
+
+  private void drawCardsWhenHaveDrawingCardsView(
+      Card[] cards, AndroidDrawingCardsView drawingCardsView) {
+    assert cards.length == 10;
+    // * create card views
+    View[] cardViews = new View[10];
+    for (int i = 0; i < 10; i++) {
+      cardViews[i] = newCardView(getContext(), cards[i], true);
+    }
+    // * restore card views and add them to card stack views
+    Runnable onAnimationEnd = () -> {
+      for (int i = 0; i < 10; i++) {
+        final View cardView = cardViews[i];
+        AndroidSpiderSolitaireView.this.removeView(cardView);
+        cardView.setTranslationX(0);
+        cardView.setTranslationY(0);
+        cardView.setScaleX(1);
+        cardView.setScaleY(1);
+        ((ViewGroup) cardStackListView.getChildAt(i)).addView(cardView, MATCH_PARENT, WRAP_CONTENT);
+      }
+    };
+    // * animate move card views in container view
+    // ** add card views to container view
+    final Rect parentBounds = new Rect();
+    final Rect startBounds = new Rect();
+    getGlobalVisibleRect(parentBounds);
+    getLastChild(drawingCardsView).getGlobalVisibleRect(startBounds);//TODO
+    startBounds.offset(-parentBounds.left, -parentBounds.top);
+    LayoutParams layoutParams = new LayoutParams(startBounds.width(), startBounds.height());
+    layoutParams.addRule(ALIGN_PARENT_RIGHT);
+    layoutParams.addRule(ALIGN_PARENT_BOTTOM);
+    layoutParams.rightMargin = parentBounds.width() - startBounds.right;
+    layoutParams.bottomMargin = parentBounds.height() - startBounds.bottom;
+    for (int i = 0; i < cards.length; i++) {
+      cardViews[i].setAlpha(0);
+      addView(cardViews[i], layoutParams);
+    }
+    // ** animate added card views
+    postDelayed(() -> {
+      AnimatorSet animator = drawCardsAnimator(cardViews);
+      animator.setDuration(getResources().getInteger(android.R.integer.config_shortAnimTime));
+      animator.setInterpolator(new AccelerateDecelerateInterpolator());
+      animator.addListener(new AnimatorListenerAdapter() {
+        @Override
+        public void onAnimationEnd(Animator animation) {
+          onAnimationEnd.run();
+        }
+      });
+      animator.start();
+    }, 1000);
+  }
+
+  private AnimatorSet drawCardsAnimator(View[] cardViews) {
+    Animator[] translationAnimators = new Animator[10];
+    assert cardViews.length == 10;
+    assert cardStackListView.getChildCount() == 10;
+    for (int i = 0; i < 10; i++) {
+      translationAnimators[i] =
+          drawCardsAnimator(cardViews[i], (CardStackLayout) cardStackListView.getChildAt(i));
+    }
+    AnimatorSet animatorSet = new AnimatorSet();
+    animatorSet.playSequentially(translationAnimators);
+    return animatorSet;
+  }
+
+  /**
+   * drawingCardsView shouldn't be null
+   */
+  private static Animator drawCardsAnimator(View cardView, CardStackLayout destCardStackView) {
+    // * calculate start and end positions
+    final Rect parentBounds = new Rect();
+    final Rect startBounds = new Rect();
+    final Rect endBounds = new Rect();
+    ((View) cardView.getParent()).getGlobalVisibleRect(parentBounds);
+    cardView.getGlobalVisibleRect(startBounds);
+    getLastChild(destCardStackView).getGlobalVisibleRect(endBounds);//TODO
+    startBounds.offset(-parentBounds.left, -parentBounds.top);
+    endBounds.offset(-parentBounds.left, -parentBounds.top);
+    endBounds.offset(0, destCardStackView.getDelta());
+    Animator animator = translationAnimator(cardView, startBounds, endBounds);
+    animator.addListener(new AnimatorListenerAdapter() {
+      @Override
+      public void onAnimationStart(Animator animation) {
+        cardView.setAlpha(1);
+      }
+    });
+    return animator;
+  }
+
+  private static Animator translationAnimator(View view, Rect startBounds, Rect endBounds) {
+    // * calculate scale ratio
+    final float startScaleRatio = ((float) startBounds.width()) / view.getWidth();
+    final float endScaleRatio = ((float) endBounds.width()) / view.getWidth();
+    //TODO take height into account
+    // * generate Animator
+    AnimatorSet animatorSet = new AnimatorSet();
+    animatorSet.playTogether(
+        ObjectAnimator.ofFloat(view, View.X, startBounds.left, endBounds.left),
+        ObjectAnimator.ofFloat(view, View.Y, startBounds.top, endBounds.top),
+        ObjectAnimator.ofFloat(view, View.SCALE_X, startScaleRatio, endScaleRatio),
+        ObjectAnimator.ofFloat(view, View.SCALE_Y, startScaleRatio, endScaleRatio)
+    );
+    return animatorSet;
   }
 
   @Override
