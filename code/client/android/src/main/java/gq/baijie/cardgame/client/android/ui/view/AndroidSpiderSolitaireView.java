@@ -8,6 +8,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
@@ -284,7 +285,93 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   @Override
   public void moveOutSortedCards(int cardStackIndex, int cardIndex) {
+    if (sortedCardsView != null) {
+      moveOutSortedCardsWhenHaveSortedCardsView(cardStackIndex, cardIndex);
+    } else {
+      moveOutSortedCardsWhenHaventSortedCardsView(cardStackIndex, cardIndex);
+    }
+  }
+
+  private void moveOutSortedCardsWhenHaventSortedCardsView(int cardStackIndex, int cardIndex) {
     WidgetUtils.removeViews((ViewGroup) cardStackListView.getChildAt(cardStackIndex), cardIndex);
+  }
+
+  private void moveOutSortedCardsWhenHaveSortedCardsView(int cardStackIndex, int cardIndex) {
+    ViewGroup cardStackView = (ViewGroup) cardStackListView.getChildAt(cardStackIndex);
+    // * before animate:
+    // save this position of the first sorted card view
+    final Rect parentBounds = new Rect();
+    final Rect startBounds = new Rect();
+    getGlobalVisibleRect(parentBounds);
+    cardStackView.getChildAt(cardIndex).getGlobalVisibleRect(startBounds);
+    startBounds.offset(-parentBounds.left, -parentBounds.top);
+    // ** move cards to a temp card stack view
+    View[] movingSortedCardViews = WidgetUtils.getChildren(cardStackView, cardIndex);
+    WidgetUtils.removeViews(cardStackView, cardIndex);
+    CardStackLayout tempCardStackView = new CardStackLayout(getContext());
+    WidgetUtils.addChildren(tempCardStackView, movingSortedCardViews);
+    // ** add this temp card stack view at the first sorted card view's position
+    final LayoutParams layoutParams = new LayoutParams(startBounds.width(), WRAP_CONTENT);
+    layoutParams.addRule(ALIGN_PARENT_LEFT);
+    layoutParams.addRule(ALIGN_PARENT_TOP);
+    layoutParams.leftMargin = startBounds.left;
+    layoutParams.topMargin = startBounds.top;
+    addView(tempCardStackView, layoutParams);
+    // * after animate: remove this temp card stack view including sorted card views
+    Runnable onAnimationEnd = () -> removeView(tempCardStackView);
+    // * animate: move this temp card stack view to sortedCardsView
+    post(()->{
+      Animator animator = animatorToSortedCardsView(tempCardStackView);
+      animator.setDuration(getResources().getInteger(android.R.integer.config_shortAnimTime));
+      animator.setInterpolator(new AccelerateDecelerateInterpolator());
+      // * remove card views moved out from this cardStackView after animate end
+      animator.addListener(new AnimatorListenerAdapter() {
+        @Override
+        public void onAnimationEnd(Animator animation) {
+          onAnimationEnd.run();
+        }
+      });
+      animator.start();
+    });
+  }
+
+  /**
+   * sortedCardsView shouldn't be null
+   */
+  private Animator animatorToSortedCardsView(ViewGroup tempCardStackView) {
+    // * calculate start and end positions
+    final Rect parentBounds = new Rect();
+    final Rect startBounds = new Rect();
+    final Rect endBounds = new Rect();
+    ((View) tempCardStackView.getParent()).getGlobalVisibleRect(parentBounds);
+    tempCardStackView.getGlobalVisibleRect(startBounds);
+    sortedCardsView.getGlobalVisibleRect(endBounds);
+    startBounds.offset(-parentBounds.left, -parentBounds.top);
+    endBounds.offset(-parentBounds.left, -parentBounds.top);
+    // * calculate scale ratio
+    final float startScaleRatioX = ((float) startBounds.width()) / tempCardStackView.getWidth();
+    final float endScaleRatioX = ((float) endBounds.width()) / tempCardStackView.getWidth();
+    final float startScaleRatioY = ((float) startBounds.height()) / tempCardStackView.getHeight();
+    final float endScaleRatioY = ((float) endBounds.height()) / tempCardStackView.getHeight();
+    // * generate Animator
+    AnimatorSet animatorSet = new AnimatorSet();
+    animatorSet.playTogether(
+        ObjectAnimator.ofFloat(tempCardStackView, View.X, startBounds.left, endBounds.left),
+        ObjectAnimator.ofFloat(tempCardStackView, View.Y, startBounds.top, endBounds.top),
+        ObjectAnimator.ofFloat(tempCardStackView, View.SCALE_X, startScaleRatioX, endScaleRatioX),
+        ObjectAnimator.ofFloat(tempCardStackView, View.SCALE_Y, startScaleRatioY, endScaleRatioY)
+    );
+    animatorSet.addListener(new AnimatorListenerAdapter() {
+      @Override
+      public void onAnimationStart(Animator animation) {
+        //TODO bug in API 16: setPivotX(0) does't work
+        // http://stackoverflow.com/questions/26658124/setpivotx-doesnt-work-on-android-4-1-1-nineoldandroids
+        // https://github.com/JakeWharton/NineOldAndroids/issues/77
+        tempCardStackView.setPivotX(0.0001f);
+        tempCardStackView.setPivotY(0.0001f);
+      }
+    });
+    return animatorSet;
   }
 
   @Override

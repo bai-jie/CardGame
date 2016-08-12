@@ -17,6 +17,23 @@ public class WidgetUtils {
     }
   }
 
+  public static View[] getChildren(@NonNull final ViewGroup parent, final int startPos) {
+    if (startPos >= parent.getChildCount()) {
+      return new View[0];
+    }
+    View[] result = new View[parent.getChildCount() - startPos];
+    for (int i = startPos; i < parent.getChildCount(); i++) {
+      result[i - startPos] = parent.getChildAt(i);
+    }
+    return result;
+  }
+
+  public static void addChildren(@NonNull final ViewGroup parent, @NonNull final View[] children) {
+    for (View child : children) {
+      parent.addView(child);
+    }
+  }
+
   public static void moveChildViews(@NonNull final ViewGroup from, @NonNull final ViewGroup to) {
     moveChildViews(from, 0, to);
   }
