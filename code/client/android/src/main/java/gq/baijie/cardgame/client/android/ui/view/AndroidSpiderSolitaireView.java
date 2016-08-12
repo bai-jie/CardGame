@@ -204,7 +204,7 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       addView(cardViews[i], layoutParams);
     }
     // ** animate added card views
-    postDelayed(() -> {
+    post(() -> {
       AnimatorSet animator = drawCardsAnimator(cardViews);
       animator.setDuration(getResources().getInteger(android.R.integer.config_shortAnimTime));
       animator.setInterpolator(new AccelerateDecelerateInterpolator());
@@ -215,7 +215,7 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
         }
       });
       animator.start();
-    }, 1000);
+    });
   }
 
   private AnimatorSet drawCardsAnimator(View[] cardViews) {
