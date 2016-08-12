@@ -164,7 +164,11 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   private void drawCardsWhenHaventDrawingCardsView(Card[] cards) {
     for (int i = 0; i < cards.length; i++) {
-      ((ViewGroup) cardStackListView.getChildAt(i)).addView(newCardView(getContext(), cards[i], true));
+      ((ViewGroup) cardStackListView.getChildAt(i)).addView(
+          newCardView(getContext(), cards[i], true),
+          MATCH_PARENT,
+          WRAP_CONTENT
+      );
     }
   }
 
@@ -181,11 +185,10 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       for (int i = 0; i < 10; i++) {
         final View cardView = cardViews[i];
         AndroidSpiderSolitaireView.this.removeView(cardView);
-        cardView.setTranslationX(0);
-        cardView.setTranslationY(0);
-        cardView.setScaleX(1);
-        cardView.setScaleY(1);
-        ((ViewGroup) cardStackListView.getChildAt(i)).addView(cardView, MATCH_PARENT, WRAP_CONTENT);
+        ((ViewGroup) cardStackListView.getChildAt(i)).addView(
+            newCardView(getContext(), ((AndroidCardView) cardView).getCard(), true),
+            MATCH_PARENT,
+            WRAP_CONTENT);
       }
     };
     // * animate move card views in container view
