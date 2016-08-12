@@ -13,6 +13,15 @@
 | nightly | https://dl.bintray.com/baijie/generic/gq/baijie/cardgame/android/nightly/apk/android-debug.apk |
 | stable | TBD |
 
+## 反馈
+您可以通过以下方法帮助完善本项目。
+
+* 在 [Issues](https://github.com/Bai-Jie/CardGame/issues) 中提出问题和建议。
+* 在程序崩溃时，按提示向开发者发送错误报告。
+* 提交 [Pull Request](https://github.com/Bai-Jie/CardGame/pulls)。
+
+无论形式如何，都非常感谢您的帮助。
+
 ## build
 1. 安装配置JDK、Android SDK等
 2. `cd code`
