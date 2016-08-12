@@ -3,6 +3,7 @@ package gq.baijie.cardgame.client.android;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
+import android.widget.Toast;
 
 import gq.baijie.cardgame.business.SpiderSolitaires;
 import gq.baijie.cardgame.client.android.ui.view.AndroidDrawingCardsView;
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
   public void onBackPressed() {
     // don't finish()
     // let user finish() through "Exit" menu item
+    Toast.makeText(this, R.string.hint_message_exit_through_menu, Toast.LENGTH_LONG).show();
   }
 
 }

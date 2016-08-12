@@ -9,6 +9,8 @@
     <string name="action_new_game">New Game</string>
     <string name="action_exit">Exit</string>
 
+    <string name="hint_message_exit_through_menu">hint: you can exit through menu</string>
+
     <string name="game_complete_dialog_title">Congratulation</string>
     <string name="game_complete_dialog_message">You win!</string>
 </resources>
