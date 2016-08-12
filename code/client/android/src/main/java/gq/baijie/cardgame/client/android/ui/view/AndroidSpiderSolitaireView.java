@@ -178,7 +178,7 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     // * create card views
     View[] cardViews = new View[10];
     for (int i = 0; i < 10; i++) {
-      cardViews[i] = newCardView(getContext(), cards[i], true);
+      cardViews[i] = new AndroidCardView(getContext(), cards[i], true);
     }
     // * restore card views and add them to card stack views
     Runnable onAnimationEnd = () -> {
