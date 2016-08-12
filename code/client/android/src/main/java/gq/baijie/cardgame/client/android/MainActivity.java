@@ -13,16 +13,17 @@ import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
 
 public class MainActivity extends AppCompatActivity {
 
-  private AndroidSpiderSolitaireView spiderSolitaireView;
-  private SpiderSolitairePresenter spiderSolitairePresenter;
-
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    spiderSolitaireView = new AndroidSpiderSolitaireView(this);
+    newGame();
+  }
+
+  private void newGame() {
+    AndroidSpiderSolitaireView spiderSolitaireView = new AndroidSpiderSolitaireView(this);
     setContentView(spiderSolitaireView);
-    spiderSolitairePresenter = new SpiderSolitairePresenter(
+    new SpiderSolitairePresenter(
         SpiderSolitaires.newGame(),
         spiderSolitaireView,
         new AndroidDrawingCardsView(this),
@@ -34,6 +35,10 @@ public class MainActivity extends AppCompatActivity {
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     super.onCreateOptionsMenu(menu);
+    menu.add(R.string.action_new_game).setOnMenuItemClickListener(item -> {
+      newGame();
+      return true;
+    });
     menu.add(R.string.action_exit).setOnMenuItemClickListener(item -> {
       finish();
       return true;
