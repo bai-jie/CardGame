@@ -60,7 +60,7 @@ public class AndroidCardView extends PercentFrameLayout {
     if (open) {
       contentView.setImageResource(toDrawableRes(card));
     } else {
-      contentView.setImageDrawable(null);
+      contentView.setImageResource(R.drawable.card_back);
     }
   }
 
