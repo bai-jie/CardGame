@@ -601,10 +601,12 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       });
 
       publish.toCompletable().subscribe(() -> {
-        moveChildViews(state.cardsBeingDragged, state.originCardStackView);
-        if (state.droppedCardStackIndex >= 0) {
-          presenter.moveCards(state.originCardStackIndex, state.originCardIndex, state.droppedCardStackIndex);
-        }
+        post(()->{
+          moveChildViews(state.cardsBeingDragged, state.originCardStackView);
+          if (state.droppedCardStackIndex >= 0) {
+            presenter.moveCards(state.originCardStackIndex, state.originCardIndex, state.droppedCardStackIndex);
+          }
+        });
       });
 
       publish.connect();
