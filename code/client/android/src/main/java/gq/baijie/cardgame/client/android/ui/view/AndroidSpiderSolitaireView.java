@@ -14,6 +14,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -40,6 +41,8 @@ import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
 import gq.baijie.cardgame.facade.view.DrawingCardsView;
 import gq.baijie.cardgame.facade.view.SortedCardsView;
 import gq.baijie.cardgame.facade.view.SpiderSolitaireView;
+import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.observables.ConnectableObservable;
 import rx.subjects.PublishSubject;
@@ -579,18 +582,8 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     dragEvents.groupBy(event -> ((DragInfo) event.second.getLocalState())).subscribe(scope -> {
       DragInfo state = scope.getKey();
 
-      ConnectableObservable<Pair<? extends View, DragEvent>> publish = scope.takeWhile(e -> {
-        switch (e.second.getAction()) {
-          case DragEvent.ACTION_DRAG_STARTED:
-            state.unendedCounter++;
-            break;
-          case DragEvent.ACTION_DRAG_ENDED:
-            state.unendedCounter--;
-            break;
-        }
-        return state.unendedCounter > 0;
-      }).publish();
-
+      ConnectableObservable<Pair<? extends View, DragEvent>> publish =
+          scope.lift(new OperatorCompleteAfterLastActionDragEndedEvent(getHandler())).publish();
 
       publish.filter(e->e.second.getAction() == DragEvent.ACTION_DROP).subscribe(e->{
         final int destStackIndex = ((ViewGroup) e.first.getParent()).indexOfChild(e.first);
@@ -601,12 +594,10 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       });
 
       publish.toCompletable().subscribe(() -> {
-        post(()->{
-          moveChildViews(state.cardsBeingDragged, state.originCardStackView);
-          if (state.droppedCardStackIndex >= 0) {
-            presenter.moveCards(state.originCardStackIndex, state.originCardIndex, state.droppedCardStackIndex);
-          }
-        });
+        moveChildViews(state.cardsBeingDragged, state.originCardStackView);
+        if (state.droppedCardStackIndex >= 0) {
+          presenter.moveCards(state.originCardStackIndex, state.originCardIndex, state.droppedCardStackIndex);
+        }
       });
 
       publish.connect();
@@ -672,7 +663,6 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     final ViewGroup originCardStackView;
     final ViewGroup cardsBeingDragged;
 
-    int unendedCounter = 0;
     int droppedCardStackIndex = -1;
 
     private DragInfo(
@@ -698,6 +688,61 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       return false;
     }
 
+  }
+
+  private static class OperatorCompleteAfterLastActionDragEndedEvent implements
+      Observable.Operator<Pair<? extends View, DragEvent>, Pair<? extends View, DragEvent>> {
+
+    final Handler mainThreadHandler;
+
+    private OperatorCompleteAfterLastActionDragEndedEvent(Handler mainThreadHandler) {
+      this.mainThreadHandler = mainThreadHandler;
+    }
+
+    @Override
+    public Subscriber<? super Pair<? extends View, DragEvent>> call(
+        Subscriber<? super Pair<? extends View, DragEvent>> subscriber) {
+      Subscriber<Pair<? extends View, DragEvent>> middleSubscriber =
+          new Subscriber<Pair<? extends View, DragEvent>>(subscriber, false) {
+
+            private int startedDragEventCounter;
+
+            @Override
+            public void onCompleted() {
+              if (!isUnsubscribed()) {
+                subscriber.onCompleted();
+              }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+              if (!isUnsubscribed()) {
+                subscriber.onError(e);
+              }
+            }
+
+            @Override
+            public void onNext(Pair<? extends View, DragEvent> event) {
+              switch (event.second.getAction()) {
+                case DragEvent.ACTION_DRAG_STARTED:
+                  startedDragEventCounter++;
+                  break;
+                case DragEvent.ACTION_DRAG_ENDED:
+                  startedDragEventCounter--;
+                  break;
+              }
+
+              subscriber.onNext(event);
+
+              if (startedDragEventCounter <= 0 && !isUnsubscribed()) {
+                unsubscribe();
+                mainThreadHandler.post(subscriber::onCompleted);
+              }
+            }
+          };
+      subscriber.add(middleSubscriber);
+      return middleSubscriber;
+    }
   }
 
   // ########## Drag and Drop End ##########
