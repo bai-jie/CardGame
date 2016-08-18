@@ -585,18 +585,29 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
       ConnectableObservable<Pair<? extends View, DragEvent>> publish =
           scope.lift(new OperatorCompleteAfterLastActionDragEndedEvent(getHandler())).publish();
 
+      // business
+      //* hide dragged cards in originCardStackView(they are shown in DragShadow)
+      publish.take(1).subscribe(event -> {
+        forEachChild(state.originCardStackView, state.originCardIndex, view -> {
+          view.setVisibility(INVISIBLE);
+        });
+      });
+
       publish.filter(e->e.second.getAction() == DragEvent.ACTION_DROP).subscribe(e->{
         final int destStackIndex = ((ViewGroup) e.first.getParent()).indexOfChild(e.first);
         if (presenter.canMoveCards(state.originCardStackIndex, state.originCardIndex, destStackIndex)) {
-          forEachChild(state.cardsBeingDragged, view -> view.setVisibility(GONE));
           state.droppedCardStackIndex = destStackIndex;
         }
       });
 
       publish.toCompletable().subscribe(() -> {
-        moveChildViews(state.cardsBeingDragged, state.originCardStackView);
         if (state.droppedCardStackIndex >= 0) {
           presenter.moveCards(state.originCardStackIndex, state.originCardIndex, state.droppedCardStackIndex);
+        } else {
+          //* restore hidden cards if don't move them
+          forEachChild(state.originCardStackView, state.originCardIndex, view -> {
+            view.setVisibility(VISIBLE);
+          });
         }
       });
 
@@ -639,11 +650,16 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     if (!presenter.getGame().canMove(cardStackIndex, cardIndex)) {
       return false;
     }
-    // move dragged card views to a new CardStackLayout
+    // build a new CardStackLayout as DragShadow
     final CardStackLayout draggedCards = new CardStackLayout(v.getContext());
-    moveChildViews(cardStackView, cardIndex, draggedCards);
+    forEachChild(cardStackView, cardIndex, view -> {
+      AndroidCardView cardView = (AndroidCardView) view;
+      draggedCards.addView(
+          new AndroidCardView(cardView.getContext(), cardView.getCard(), cardView.isOpen()),
+          MATCH_PARENT,
+          WRAP_CONTENT);
+    });
     // start drag cards
-//            draggedCards.requestLayout();
     draggedCards.measure(
         View.MeasureSpec.makeMeasureSpec(cardStackView.getWidth(), View.MeasureSpec.EXACTLY),
         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
