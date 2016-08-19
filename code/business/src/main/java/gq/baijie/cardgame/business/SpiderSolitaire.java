@@ -404,6 +404,11 @@ public class SpiderSolitaire {
       public int getOpenIndex() {
         return openIndex;
       }
+
+      public void setOpenIndex(int openIndex) {
+        this.openIndex = openIndex;
+      }
+
     }
 
     public static class MoveEvent {

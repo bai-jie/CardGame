@@ -11,8 +11,17 @@ import gq.baijie.cardgame.client.android.ui.view.AndroidGameCompleteView;
 import gq.baijie.cardgame.client.android.ui.view.AndroidSortedCardsView;
 import gq.baijie.cardgame.client.android.ui.view.AndroidSpiderSolitaireView;
 import gq.baijie.cardgame.facade.presenter.SpiderSolitairePresenter;
+import rx.Observable;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
 
 public class MainActivity extends AppCompatActivity {
+
+  private final Subject<Menu, Menu> createOptionsMenuEvents = PublishSubject.create();
+
+  public Observable<Menu> getCreateOptionsMenuEvents() {
+    return createOptionsMenuEvents.asObservable();
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -40,10 +49,12 @@ public class MainActivity extends AppCompatActivity {
       newGame();
       return true;
     });
-    menu.add(R.string.action_exit).setOnMenuItemClickListener(item -> {
+    menu.add(Menu.NONE, Menu.NONE, Menu.CATEGORY_SECONDARY, R.string.action_exit)
+        .setOnMenuItemClickListener(item -> {
       finish();
       return true;
     });
+    createOptionsMenuEvents.onNext(menu);
     return true;
   }
 

@@ -18,6 +18,7 @@ def javaProjects = []
 def androidProjects = []
 
 javaProjects << ':business'
+javaProjects << ':test-tool'
 androidProjects << ':client:android'
 
 project(javaProjects) {

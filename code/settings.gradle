@@ -1,4 +1,5 @@
 rootProject.name = 'card-game'
 
 include ':business'
+include ':test-tool'
 include ':client:android'
