@@ -9,6 +9,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
@@ -632,9 +633,10 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
    *   <li>card stack view's parent is card stack list view(ViewGroup)</li>
    * </ul>
    * @param v should be card view
+   * @param touchPosition current touch position relative to v
    * @return start successfully(card view can move...)
    */
-  private boolean startDrag(View v) {
+  private boolean startDrag(View v, PointF touchPosition) {
     final ViewGroup cardStackView = (ViewGroup) v.getParent();
     final int cardIndex = cardStackView.indexOfChild(v);
     final int cardStackIndex =
@@ -659,7 +661,14 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     draggedCards.layout(0, 0, draggedCards.getMeasuredWidth(), draggedCards.getMeasuredHeight());
     cardStackView.startDrag(
         null,
-        new View.DragShadowBuilder(draggedCards),
+        new View.DragShadowBuilder(draggedCards) {
+          @Override
+          public void onProvideShadowMetrics(Point shadowSize, Point shadowTouchPoint) {
+            super.onProvideShadowMetrics(shadowSize, shadowTouchPoint);
+            shadowTouchPoint.x = Math.min(shadowSize.x, Math.max(0, (int) touchPosition.x));
+            shadowTouchPoint.y = Math.min(shadowSize.y, Math.max(0, (int) touchPosition.y));
+          }
+        },
         new DragInfo(cardStackIndex, cardIndex, cardStackView, draggedCards),
         0
     );
@@ -707,21 +716,31 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
           break;
 
         case MotionEvent.ACTION_MOVE:
-          if (calculateDistance(event) > touchSlop) {
-            startDrag(v);
+          PointF position = getPosition(event);
+          if (position != null && calculateDistance(position) > touchSlop) {
+            startDrag(v, position);
           }
           break;
       }
       return true;
     }
 
-    private float calculateDistance(MotionEvent event) {
+    /**
+     * get the position of event <strong>relative to the view</strong>
+     */
+    @Nullable
+    private PointF getPosition(MotionEvent event) {
       int pointerIndex = event.findPointerIndex(activePointerId);
       if (pointerIndex < 0) {
-        return 0;
+        return null;
       }
-      double dx = event.getX(pointerIndex) - (double) firstX;
-      double dy = event.getY(pointerIndex) - (double) firstY;
+      //TODO (getX, getY) is relative to the view only for InputDevice.SOURCE_CLASS_POINTER
+      return new PointF(event.getX(pointerIndex), event.getY(pointerIndex));
+    }
+
+    private float calculateDistance(@NonNull PointF position) {
+      double dx = position.x - (double) firstX;
+      double dy = position.y - (double) firstY;
       return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
