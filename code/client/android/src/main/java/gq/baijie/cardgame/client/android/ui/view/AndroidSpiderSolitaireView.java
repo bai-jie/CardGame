@@ -23,6 +23,7 @@ import android.view.DragEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.LinearLayout;
@@ -513,16 +514,9 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
         v.requestLayout();
       }
     };
-    final View.OnClickListener clickListener = new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        v.requestFocusFromTouch();
-      }
-    };
     internalEventBus.ofType(NewCardViewEvent.class).map(e -> e.cardView).subscribe(cardView -> {
       cardView.setFocusableInTouchMode(true);
       cardView.setOnFocusChangeListener(focusChangeListener);
-      cardView.setOnClickListener(clickListener);
     });
   }
 
@@ -618,10 +612,9 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
 
   private void setDragListener() {
     // for every card views
-    final OnTouchCardViewListener onTouchCardViewListener = new OnTouchCardViewListener();
     internalEventBus
         .ofType(NewCardViewEvent.class)
-        .subscribe(e -> e.cardView.setOnTouchListener(onTouchCardViewListener));
+        .subscribe(e -> e.cardView.setOnTouchListener(new OnTouchCardViewListener()));
     // subscribe drag events emitted by card stack views
     internalEventBus.ofType(NewCardStackViewEvent.class).map(e -> e.cardStackView)
         .subscribe(view -> {
@@ -694,14 +687,42 @@ public class AndroidSpiderSolitaireView extends RelativeLayout implements Spider
     }
   }
 
+  final int touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+
   private class OnTouchCardViewListener implements OnTouchListener {
+
+    int activePointerId;
+
+    float firstX, firstY;
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-      if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-        startDrag(v);
+      switch (event.getActionMasked()) {
+        case MotionEvent.ACTION_DOWN:
+          activePointerId = event.getPointerId(0);
+          firstX = event.getX();
+          firstY = event.getY();
+
+          v.requestFocusFromTouch();
+          break;
+
+        case MotionEvent.ACTION_MOVE:
+          if (calculateDistance(event) > touchSlop) {
+            startDrag(v);
+          }
+          break;
       }
-      return false;
+      return true;
+    }
+
+    private float calculateDistance(MotionEvent event) {
+      int pointerIndex = event.findPointerIndex(activePointerId);
+      if (pointerIndex < 0) {
+        return 0;
+      }
+      double dx = event.getX(pointerIndex) - (double) firstX;
+      double dy = event.getY(pointerIndex) - (double) firstY;
+      return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
   }
